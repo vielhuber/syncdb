@@ -6,8 +6,10 @@
 		"database": "EXAMPLE",
 		"username": "EXAMPLE",
 		"password": "EXAMPLE",
-		"cmd": "mysqldump",
-		"ssh": {			
+		"cmd": "mysql5dump",
+		"ssh": {
+			"type": "fast",
+			"tmp_dir": "/tmp/",	
 			"host": "EXAMPLE",
 			"username": "EXAMPLE",
 			"key": "C:\\Users\\David\\.ssh\\id_rsa"
