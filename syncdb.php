@@ -36,10 +36,16 @@ class SyncDB
 			self::executeCommand($command, "STEP 1: GETTING DB FROM SOURCE...");
 			if (isset($config->source->ssh) && $config->source->ssh !== false && isset($config->source->ssh->type) && $config->source->ssh->type == 'fast')
 			{
-				$command = "scp -r " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . ":" . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . " " . $tmp_filename . "";
-				self::executeCommand($command, "STEP 1B: COPYING DB TO SOURCE...");
-				$command = "ssh " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"" . "rm " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . "\"";
-				self::executeCommand($command, "STEP 1C: DELETING TMP DB...");
+				$command = "ssh " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"" . "zip " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . ".zip " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . "\"";
+				self::executeCommand($command, "STEP 1B: ZIPPING DB...");
+				$command = "scp -r " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . ":" . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . ".zip " . $tmp_filename . ".zip";
+				self::executeCommand($command, "STEP 1C: COPYING DB TO SOURCE...");
+				$command = "unzip -j ".$tmp_filename.".zip";
+				self::executeCommand($command, "STEP 1C: UNZIPPING...");
+				$command = "rm ".$tmp_filename.".zip";
+				self::executeCommand($command, "STEP 1C: UNZIPPING...");
+				$command = "ssh " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"" . "rm " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . ".zip; rm " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . "\"";
+				self::executeCommand($command, "STEP 1D: DELETING TMP DB...");
 			}
 
 			// delete
