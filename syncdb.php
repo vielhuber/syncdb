@@ -33,13 +33,13 @@ class SyncDB
 				$command .= " > \"" . $tmp_filename . "\"";
 			}
 
-			executeCommand($command, "STEP 1: GETTING DB FROM SOURCE...");
+			self::executeCommand($command, "STEP 1: GETTING DB FROM SOURCE...");
 			if (isset($config->source->ssh) && $config->source->ssh !== false && isset($config->source->ssh->type) && $config->source->ssh->type == 'fast')
 			{
 				$command = "scp -r " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . ":" . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . " " . $tmp_filename . "";
-				executeCommand($command, "STEP 1B: COPYING DB TO SOURCE...");
+				self::executeCommand($command, "STEP 1B: COPYING DB TO SOURCE...");
 				$command = "ssh " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"" . "rm " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . "\"";
-				executeCommand($command, "STEP 1C: DELETING TMP DB...");
+				self::executeCommand($command, "STEP 1C: DELETING TMP DB...");
 			}
 
 			// delete
@@ -56,7 +56,7 @@ class SyncDB
 				$command .= "\"";
 			}
 
-			executeCommand($command, "STEP 2: DELETING CURRENT DB...");
+			self::executeCommand($command, "STEP 2: DELETING CURRENT DB...");
 
 			// push
 
@@ -72,7 +72,7 @@ class SyncDB
 				$command .= "\"";
 			}
 
-			executeCommand($command, "STEP 3: PUSHING NEW DB...");
+			self::executeCommand($command, "STEP 3: PUSHING NEW DB...");
 
 			// replace e.g. with the help of https://github.com/interconnectit/Search-Replace-DB
 			// therefore place this script inside search-replace-db
@@ -81,19 +81,19 @@ class SyncDB
 				if (isset($config->target->ssh) && $config->target->ssh !== false)
 				{
 					$command = "ssh " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " -M -S my-ctrl-socket -fnNT -L 50000:localhost:" . $config->target->port . " " . $config->target->ssh->username . "@" . $config->target->ssh->host . "";
-					executeCommand($command, "STEP 4: OPENING UP SSH TUNNEL...");
+					self::executeCommand($command, "STEP 4: OPENING UP SSH TUNNEL...");
 				}
 
 				foreach($config->replace as $search => $replace)
 				{
 					$command = "php search-replace-db/srdb.cli.php -h " . $config->target->host . " -n " . $config->target->database . " -u " . $config->target->username . " -p \"" . $config->target->password . "\" --port " . $config->target->port . " -s \"" . $search . "\" -r \"" . $replace . "\"";
-					executeCommand($command, "STEP 5: SEARCH/REPLACE...");
+					self::executeCommand($command, "STEP 5: SEARCH/REPLACE...");
 				}
 
 				if (isset($config->target->ssh) && $config->target->ssh !== false)
 				{
 					$command = "ssh " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " -S my-ctrl-socket -O exit " . $config->target->ssh->username . "@" . $config->target->ssh->host . "";
-					executeCommand($command, "STEP 6: CLOSING SSH TUNNEL...");
+					self::executeCommand($command, "STEP 6: CLOSING SSH TUNNEL...");
 				}
 			}
 		}
@@ -113,9 +113,7 @@ class SyncDB
 		echo $message . "\n";
 		if (self::$debug === true)
 		{
-			echo '<pre>';
 			print_r($command);
-			echo '</pre>';
 		}
 
 		// remove newlines
