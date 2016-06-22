@@ -15,10 +15,10 @@ class SyncDB
 			$command = "";
 			if (isset($config->source->ssh) && $config->source->ssh !== false)
 			{
-				$command .= "ssh " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"";
+				$command .= "ssh " . ((isset($config->source->ssh->port)) ? (" -p \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"";
 			}
 
-			$command .= (isset($config->source->cmd) ? ($config->source->cmd) : ("mysqldump")) . " -h " . $config->source->host . " --port " . $config->source->port . " -u " . $config->source->username . " -p\"" . $config->source->password . "\" " . $config->source->database . "";
+			$command .= "\"".(isset($config->source->cmd) ? ($config->source->cmd) : ("mysqldump")) . "\" -h " . $config->source->host . " --port " . $config->source->port . " -u " . $config->source->username . " -p\"" . $config->source->password . "\" " . $config->source->database . "";
 			if (isset($config->source->ssh) && $config->source->ssh !== false && isset($config->source->ssh->type) && $config->source->ssh->type == 'fast')
 			{
 				$command .= " > " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . "\"";
@@ -36,7 +36,7 @@ class SyncDB
 			self::executeCommand($command, "STEP 1: GETTING DB FROM SOURCE...");
 			if (isset($config->source->ssh) && $config->source->ssh !== false && isset($config->source->ssh->type) && $config->source->ssh->type == 'fast')
 			{
-				$command = "ssh " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"" . "zip " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . ".zip " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . "\"";
+				$command = "ssh " . ((isset($config->source->ssh->port)) ? (" -p \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"" . "zip " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . ".zip " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . "\"";
 				self::executeCommand($command, "STEP 1B: ZIPPING DB...");
 				$command = "scp -r " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . ":" . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . ".zip " . $tmp_filename . ".zip";
 				self::executeCommand($command, "STEP 1C: COPYING DB TO SOURCE...");
@@ -44,7 +44,7 @@ class SyncDB
 				self::executeCommand($command, "STEP 1C: UNZIPPING...");
 				$command = "rm ".$tmp_filename.".zip";
 				self::executeCommand($command, "STEP 1C: UNZIPPING...");
-				$command = "ssh " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"" . "rm " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . ".zip; rm " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . "\"";
+				$command = "ssh " . ((isset($config->source->ssh->port)) ? (" -p \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"" . "rm " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . ".zip; rm " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . "\"";
 				self::executeCommand($command, "STEP 1D: DELETING TMP DB...");
 			}
 
@@ -53,10 +53,10 @@ class SyncDB
 			$command = "";
 			if (isset($config->target->ssh) && $config->target->ssh !== false)
 			{
-				$command .= "ssh " . ((isset($config->target->ssh->key)) ? (" -i \"" . $config->target->ssh->key . "\"") : ("")) . " " . $config->target->ssh->username . "@" . $config->target->ssh->host . " \"";
+				$command .= "ssh " . ((isset($config->target->ssh->port)) ? (" -p \"" . $config->target->ssh->port . "\"") : ("")) . " " . ((isset($config->target->ssh->key)) ? (" -i \"" . $config->target->ssh->key . "\"") : ("")) . " " . $config->target->ssh->username . "@" . $config->target->ssh->host . " \"";
 			}
 
-			$command .= "" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . " -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p\"" . $config->target->password . "\" -e \"drop database if exists `" . $config->target->database . "`; create database `" . $config->target->database . "`;\"";
+			$command .= "\"" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . "\" -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p\"" . $config->target->password . "\" -e \"drop database if exists `" . $config->target->database . "`; create database `" . $config->target->database . "`;\"";
 			if (isset($config->target->ssh) && $config->target->ssh !== false)
 			{
 				$command .= "\"";
@@ -69,10 +69,10 @@ class SyncDB
 			$command = "";
 			if (isset($config->target->ssh) && $config->target->ssh !== false)
 			{
-				$command .= "ssh " . ((isset($config->target->ssh->key)) ? (" -i \"" . $config->target->ssh->key . "\"") : ("")) . " " . $config->target->ssh->username . "@" . $config->target->ssh->host . " \"";
+				$command .= "ssh " . ((isset($config->target->ssh->port)) ? (" -p \"" . $config->target->ssh->port . "\"") : ("")) . " " . ((isset($config->target->ssh->key)) ? (" -i \"" . $config->target->ssh->key . "\"") : ("")) . " " . $config->target->ssh->username . "@" . $config->target->ssh->host . " \"";
 			}
 
-			$command .= "" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . " -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p\"" . $config->target->password . "\" " . $config->target->database . " --default-character-set=utf8 < \"" . $tmp_filename . "\"";
+			$command .= "\"" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . "\" -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p\"" . $config->target->password . "\" " . $config->target->database . " --default-character-set=utf8 < \"" . $tmp_filename . "\"";
 			if (isset($config->target->ssh) && $config->target->ssh !== false)
 			{
 				$command .= "\"";
@@ -86,7 +86,7 @@ class SyncDB
 			{
 				if (isset($config->target->ssh) && $config->target->ssh !== false)
 				{
-					$command = "ssh " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " -M -S my-ctrl-socket -fnNT -L 50000:localhost:" . $config->target->port . " " . $config->target->ssh->username . "@" . $config->target->ssh->host . "";
+					$command = "ssh " . ((isset($config->target->ssh->port)) ? (" -p \"" . $config->target->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " -M -S my-ctrl-socket -fnNT -L 50000:localhost:" . $config->target->port . " " . $config->target->ssh->username . "@" . $config->target->ssh->host . "";
 					self::executeCommand($command, "STEP 4: OPENING UP SSH TUNNEL...");
 				}
 
@@ -98,7 +98,7 @@ class SyncDB
 
 				if (isset($config->target->ssh) && $config->target->ssh !== false)
 				{
-					$command = "ssh " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " -S my-ctrl-socket -O exit " . $config->target->ssh->username . "@" . $config->target->ssh->host . "";
+					$command = "ssh " . ((isset($config->target->ssh->port)) ? (" -p \"" . $config->target->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " -S my-ctrl-socket -O exit " . $config->target->ssh->username . "@" . $config->target->ssh->host . "";
 					self::executeCommand($command, "STEP 6: CLOSING SSH TUNNEL...");
 				}
 			}
