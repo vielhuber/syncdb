@@ -9,6 +9,7 @@
 		"cmd": "mysql5dump",
 		"ssh": {
 			"type": "fast",
+			"zip": true,
 			"tmp_dir": "/tmp/",	
 			"host": "EXAMPLE",
 			"username": "EXAMPLE",
