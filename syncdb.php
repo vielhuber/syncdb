@@ -42,7 +42,7 @@ class SyncDB
 				isset($config->source->ssh->type) && $config->source->ssh->type == 'fast'
 			)
 			{
-				if( isset($config->source->zip) && $config->source->zip === true ) {
+				if( isset($config->source->ssh) && isset($config->source->ssh->zip) && $config->source->ssh->zip === true ) {
 					$command = "ssh " . ((isset($config->source->ssh->port)) ? (" -p \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"" . "zip " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . ".zip " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . "\"";
 					self::executeCommand($command, "STEP 1B: ZIPPING DB...");
 					$command = "scp -r " . ((isset($config->source->ssh->port)) ? (" -P \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . ":" . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . ".zip " . $tmp_filename . ".zip";
