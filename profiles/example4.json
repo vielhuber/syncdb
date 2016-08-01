@@ -1,0 +1,24 @@
+{
+	"engine": "mysql",
+	"source": {
+		"host": "127.0.0.1",
+		"port": "3307",
+		"database": "EXAMPLE",
+		"username": "EXAMPLE",
+		"password": "EXAMPLE",
+		"cmd": "/Applications/MAMP/Library/bin/mysqldump",
+		"ssh": false
+	},
+	"target": {
+		"host": "127.0.0.1",
+		"port": "3306",
+		"database": "EXAMPLE",
+		"username": "EXAMPLE",
+		"password": "EXAMPLE",
+		"cmd": "/Applications/MAMP/Library/bin/mysql",
+		"ssh": false
+	},
+	"replace": {
+		"foo": "bar"
+	}
+}
