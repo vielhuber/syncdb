@@ -64,6 +64,11 @@ class SyncDB
 				}
 			}
 
+			// replacing corrupt collations
+			$search_replace_collation = file_get_contents($tmp_filename);
+			$search_replace_collation = str_replace("CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci","CHARSET=utf8 COLLATE=utf8_general_ci",$search_replace_collation);
+			file_put_contents($tmp_filename,$search_replace_collation);
+
 			// delete
 
 			$command = "";
