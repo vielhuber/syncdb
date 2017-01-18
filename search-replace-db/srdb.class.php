@@ -36,6 +36,16 @@
  * License: GPL v3
  * License URL: http://www.gnu.org/copyleft/gpl.html
  *
+ * Version 4.0:
+ * 		* Support for continuous integration through Travis CI
+ *      * Aility to do multiple search-replaces
+ *      * Ability to exclude tables
+ *      * Support for autodetection of Joomla, Docker, and Typo3 configurations
+ *      * Script now checks whether the correct version of PHP is used
+ *      * Script checks if necessary modules are installed
+ *      * Script checks if the connection is secure and gives a warning otherwise
+ *      * Bug fixes
+ *      * UI Tweaks
  *
  * Version 3.1.0:
  *		* Added port number option to both web and CLI interfaces.
@@ -112,6 +122,8 @@ class icit_srdb {
 	 */
 	public $tables = array();
 
+	public $exclude_tables = array();
+
 	/**
 	 * @var string Search term
 	 */
@@ -182,7 +194,9 @@ class icit_srdb {
 						'search' => array(),
 						'db' => array(),
 						'tables' => array(),
-						'results' => array()
+						'results' => array(),
+                        'exclude_tables'=>array(),
+                        'compatibility' => array()
 					);
 
 	public $error_type = 'search';
@@ -244,6 +258,7 @@ class icit_srdb {
 	 *
 	 * @return void
 	 */
+
 	public function __construct( $args ) {
 
 		$args = array_merge( array(
@@ -255,6 +270,7 @@ class icit_srdb {
 			'search' 			=> '',
 			'replace' 			=> '',
 			'tables'			=> array(),
+            'exclude_tables'    => array(),
 			'exclude_cols' 		=> array(),
 			'include_cols' 		=> array(),
 			'dry_run' 			=> true,
@@ -279,20 +295,20 @@ class icit_srdb {
 		mb_regex_encoding( 'UTF-8' );
 
 		// allow a string for columns
-		foreach( array( 'exclude_cols', 'include_cols', 'tables' ) as $maybe_string_arg ) {
+		foreach( array( 'exclude_cols', 'include_cols', 'tables' , 'exclude_tables') as $maybe_string_arg ) {
 			if ( is_string( $args[ $maybe_string_arg ] ) )
 				$args[ $maybe_string_arg ] = array_filter( array_map( 'trim', explode( ',', $args[ $maybe_string_arg ] ) ) );
 		}
-		
-		// verify that the port number is logical		
+
+		// verify that the port number is logical
 		// work around PHPs inability to stringify a zero without making it an empty string
 		// AND without casting away trailing characters if they are present.
-		$port_as_string = (string)$args['port'] ? (string)$args['port'] : "0";		
+		$port_as_string = (string)$args['port'] ? (string)$args['port'] : "0";
 		if ( (string)abs( (int)$args['port'] ) !== $port_as_string ) {
 			$port_error = 'Port number must be a positive integer if specified.';
 			$this->add_error( $port_error, 'db' );
 			if ( defined( 'STDIN' ) ) {
-				echo 'Error: ' . $port_error;	
+				echo 'Error: ' . $port_error;
 			}
 			return;
 		}
@@ -332,9 +348,21 @@ class icit_srdb {
 				$report = $this->update_collation( $this->alter_collation, $this->tables );
 			}
 
-			// default search/replace action
+            elseif (is_array($this->search)){
+                $report = array();
+                for ($i = 0; $i < count($this->search); $i++){
+                    $report[$i] = $this->replacer($this->search[$i], $this->replace[$i], $this->tables, $this->exclude_tables);
+                }
+
+                //$report = array_merge($report, $new_report);
+//                  $report = array_merge($report, $this->replacer($this->search[$i],$this->replace[$i],$this->tables, $this->exclude_tables));
+//                    $new_report = $this->replacer($this->search[$i],$this->replace[$i],$this->tables, $this->exclude_tables);
+//                    $report['table_reports'] = array_merge($report['table_reports'], $new_report['table_reports']);
+//                }
+
+            }
 			else {
-				$report = $this->replacer( $this->search, $this->replace, $this->tables );
+				$report = $this->replacer( $this->search, $this->replace, $this->tables, $this->exclude_tables );
 			}
 
 		} else {
@@ -347,6 +375,7 @@ class icit_srdb {
 		$this->set( 'report', $report );
 		return $report;
 	}
+
 
 
 	/**
@@ -438,6 +467,7 @@ class icit_srdb {
 			return false;
 		}
 
+
 		// connect
 		$this->set( 'db', $this->connect( $connection_type ) );
 
@@ -485,7 +515,7 @@ class icit_srdb {
 	 * @return PDO|bool
 	 */
 	public function connect_pdo() {
-	
+
 		try {
 			$connection = new PDO( "mysql:host={$this->host};port={$this->port};dbname={$this->name}", $this->user, $this->pass );
 		} catch( PDOException $e ) {
@@ -537,7 +567,8 @@ class icit_srdb {
 		FROM information_schema.`TABLES` t
 			LEFT JOIN information_schema.`COLLATION_CHARACTER_SET_APPLICABILITY` c
 				ON ( t.`TABLE_COLLATION` = c.`COLLATION_NAME` )
-		  WHERE t.`TABLE_SCHEMA` = '{$this->name}';
+		  WHERE t.`TABLE_SCHEMA` = '{$this->name}'
+		  ORDER BY t.`TABLE_NAME`;
 		";
 
 		$all_tables_mysql = $this->db_query( $show_table_status );
@@ -807,7 +838,7 @@ class icit_srdb {
 	 *
 	 * @return array    Collection of information gathered during the run.
 	 */
-	public function replacer( $search = '', $replace = '', $tables = array( ) ) {
+	public function replacer( $search = '', $replace = '', $tables = array( ), $exclude_tables = array() ) {
 		$search = (string)$search;
 		// check we have a search string, bail if not
 		if ( '' === $search ) {
@@ -836,8 +867,8 @@ class icit_srdb {
 						 );
 
 		$dry_run = $this->get( 'dry_run' );
-
-		if ( $this->get( 'dry_run' ) ) 	// Report this as a search-only run.
+        $errors = $this->get('errors');
+		if ( $this->get( 'dry_run' ) and !(in_array('The dry-run option was selected. No replacements will be made.', $errors['results']))) 	// Report this as a search-only run.
 			$this->add_error( 'The dry-run option was selected. No replacements will be made.', 'results' );
 
 		// if no tables selected assume all
@@ -849,7 +880,11 @@ class icit_srdb {
 		if ( is_array( $tables ) && ! empty( $tables ) ) {
 
 			foreach( $tables as $table ) {
-
+                if (in_array($table, $exclude_tables))
+                {
+                    $this->add_error('Ignoring Table: ' . $table);
+                    continue;
+                }
 				$encoding = $this->get_table_character_set( $table );
 				switch( $encoding ) {
 
@@ -871,12 +906,12 @@ class icit_srdb {
 
 				// get primary key and columns
 				list( $primary_key, $columns ) = $this->get_columns( $table );
-				
+
 				if ( $primary_key === null || empty( $primary_key ) ) {
 					$this->add_error( "The table \"{$table}\" has no primary key. Changes will have to be made manually.", 'results' );
 					continue;
 				}
-				
+
 				// create new table report instance
 				$new_table_report = $table_report;
 				$new_table_report[ 'start' ] = microtime();
@@ -926,7 +961,7 @@ class icit_srdb {
 							// include cols
 							if ( ! empty( $this->include_cols ) && ! in_array( $column, $this->include_cols ) )
 								continue;
-							
+
 							// Run a search replace on the data that'll respect the serialisation.
 							$edited_data = $this->recursive_unserialize_replace( $search, $replace, $data_to_fix );
 
@@ -958,7 +993,7 @@ class icit_srdb {
 						} elseif ( $update && ! empty( $where_sql ) ) {
 
 							$sql = 'UPDATE ' . $table . ' SET ' . implode( ', ', $update_sql ) . ' WHERE ' . implode( ' AND ', array_filter( $where_sql ) );
-							
+
 							$result = $this->db_update( $sql );
 
 							if ( ! is_int( $result ) && ! $result ) {
@@ -1043,7 +1078,7 @@ class icit_srdb {
 			$report = array( 'engine' => $engine, 'converted' => array() );
 
 			$all_tables = $this->get_tables();
-			
+
 			if ( empty( $tables ) ) {
 				$tables = array_keys( $all_tables );
 			}
@@ -1094,7 +1129,7 @@ class icit_srdb {
 			$report = array( 'collation' => $collation, 'converted' => array() );
 
 			$all_tables = $this->get_tables();
-				
+
 			if ( empty( $tables ) ) {
 				$tables = array_keys( $all_tables );
 			}

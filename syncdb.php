@@ -67,6 +67,7 @@ class SyncDB
 			// replacing corrupt collations
 			$search_replace_collation = file_get_contents($tmp_filename);
 			$search_replace_collation = str_replace("CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci","CHARSET=utf8 COLLATE=utf8_general_ci",$search_replace_collation);
+			$search_replace_collation = str_replace("COLLATE utf8mb4_unicode_520_ci","COLLATE utf8_general_ci",$search_replace_collation);
 			file_put_contents($tmp_filename,$search_replace_collation);
 
 			// delete
@@ -111,11 +112,22 @@ class SyncDB
 					self::executeCommand($command, "STEP 4: OPENING UP SSH TUNNEL...");
 				}
 
+				// old
 				foreach($config->replace as $search => $replace)
 				{
 					$command = "php search-replace-db/srdb.cli.php -h " . $config->target->host . " -n " . $config->target->database . " -u " . $config->target->username . " -p \"" . $config->target->password . "\" --port " . $config->target->port . " -s \"" . $search . "\" -r \"" . $replace . "\"";
 					self::executeCommand($command, "STEP 5: SEARCH/REPLACE...");
 				}
+
+				// new
+				/*
+				{
+					$search = '["'.implode('","',array_keys((array)$config->replace)).'"]';
+					$replace = '["'.implode('","',array_values((array)$config->replace)).'"]';
+					$command = "php search-replace-db/srdb.cli.php -h " . $config->target->host . " -n " . $config->target->database . " -u " . $config->target->username . " -p \"" . $config->target->password . "\" --port " . $config->target->port . " -s '" . $search . "' -r '" . $replace . "'";
+					self::executeCommand($command, "STEP 5: SEARCH/REPLACE...");
+				}
+				*/
 
 				if (isset($config->target->ssh) && $config->target->ssh !== false)
 				{
