@@ -1,0 +1,51 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
+    ],
+    "hash": "27a491debfe91161e97c158664bd8d22",
+    "content-hash": "817d16cdd69f35b58c6d188c3ef85744",
+    "packages": [
+        {
+            "name": "vielhuber/magicreplace",
+            "version": "1.1.9",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/vielhuber/magicreplace.git",
+                "reference": "adcb6e20aa1c51c8cb57a6eb07545bb3033b829e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/vielhuber/magicreplace/zipball/adcb6e20aa1c51c8cb57a6eb07545bb3033b829e",
+                "reference": "adcb6e20aa1c51c8cb57a6eb07545bb3033b829e",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.6"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "vielhuber\\magicreplace\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "A search/replace class with zero overhead.",
+            "time": "2017-03-24 00:30:36"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": ">=5.6"
+    },
+    "platform-dev": []
+}

@@ -1,12 +1,22 @@
 <?php
-class SyncDB
+namespace vielhuber\syncdb;
+require __DIR__ . '/../vendor/autoload.php';
+use vielhuber\magicreplace\magicreplace;
+class syncdb
 {
 	public static $debug = false;
 
 	public static function sync($profile)
 	{
-		$config = json_decode(file_get_contents('profiles/' . $profile . '.json'));
+
+		$config = json_decode(file_get_contents('../profiles/' . $profile . '.json'));
 		$tmp_filename = "db_" . md5(uniqid()) . ".sql";
+
+		// clean up files
+		foreach(glob('db_*.sql') as $file){
+		  if(is_file($file)) { unlink($file); }
+		}
+
 		if ($config->engine == "mysql")
 		{
 			
@@ -70,6 +80,13 @@ class SyncDB
 			$search_replace_collation = str_replace("COLLATE utf8mb4_unicode_520_ci","COLLATE utf8_general_ci",$search_replace_collation);
 			file_put_contents($tmp_filename,$search_replace_collation);
 
+			// search / replace
+			if (isset($config->replace))
+			{
+				magicreplace::run($tmp_filename,$tmp_filename,$config->replace);
+				echo '--- SEARCH/REPLACE...'.PHP_EOL;
+			}
+
 			// delete
 
 			$command = "";
@@ -105,6 +122,7 @@ class SyncDB
 
 			// replace e.g. with the help of https://github.com/interconnectit/Search-Replace-DB
 			// therefore place this script inside search-replace-db
+			/*
 			if (isset($config->replace))
 			{
 				if (isset($config->target->ssh) && $config->target->ssh !== false)
@@ -113,22 +131,11 @@ class SyncDB
 					self::executeCommand($command, "--- OPENING UP SSH TUNNEL...");
 				}
 
-				// old
 				foreach($config->replace as $search => $replace)
 				{
 					$command = "php search-replace-db/srdb.cli.php -h " . $config->target->host . " -n " . $config->target->database . " -u " . $config->target->username . " -p \"" . $config->target->password . "\" --port " . $config->target->port . " -s \"" . $search . "\" -r \"" . $replace . "\"";
 					self::executeCommand($command, "--- SEARCH/REPLACE...");
 				}
-
-				// new
-				/*
-				{
-					$search = '["'.implode('","',array_keys((array)$config->replace)).'"]';
-					$replace = '["'.implode('","',array_values((array)$config->replace)).'"]';
-					$command = "php search-replace-db/srdb.cli.php -h " . $config->target->host . " -n " . $config->target->database . " -u " . $config->target->username . " -p \"" . $config->target->password . "\" --port " . $config->target->port . " -s '" . $search . "' -r '" . $replace . "'";
-					self::executeCommand($command, "--- SEARCH/REPLACE...");
-				}
-				*/
 
 				if (isset($config->target->ssh) && $config->target->ssh !== false)
 				{
@@ -136,6 +143,7 @@ class SyncDB
 					self::executeCommand($command, "--- CLOSING SSH TUNNEL...");
 				}
 			}
+			*/
 		}
 
 		if ($config->engine == "pgsql")
@@ -150,7 +158,7 @@ class SyncDB
 
 	public static function executeCommand($command, $message, $suppress_output = false)
 	{
-		echo $message . "\n";
+		echo $message . PHP_EOL;
 
 		// remove newlines
 		$command = trim(preg_replace('/\s+/', ' ', $command));
@@ -176,9 +184,9 @@ class SyncDB
 
 // usage from command line
 
-if (!isset($argv) || empty($argv) || !isset($argv[1]) || !file_exists('profiles/' . $argv[1] . '.json'))
+if (!isset($argv) || empty($argv) || !isset($argv[1]) || !file_exists('../profiles/' . $argv[1] . '.json'))
 {
 	die('missing profile');
 }
 
-SyncDB::sync($argv[1]);
+syncdb::sync($argv[1]);

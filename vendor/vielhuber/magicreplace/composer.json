@@ -1,0 +1,13 @@
+{
+    "name": "vielhuber/magicreplace",
+    "description": "A search/replace class with zero overhead.",
+    "require": {
+      "php": ">=5.6"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+	        "vielhuber\\magicreplace\\": "src/"
+    	}
+    }
+}

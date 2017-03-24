@@ -2,6 +2,15 @@
 
 syncdb syncs databases (mysql, pgsql) between two servers (optional via ssh tunnel).
 
+## Key benefits
+
+* Most common use case: Sync your production database to your local environment
+* You also can sync between any servers, even from remote to remote (without local)
+* Works with direct database connections or via ssh tunnels
+* Has also a fast mode where the sql file is zipped
+* (Remote) commmands like mysqldump, mysql and zip can be overwritten manually to fit any environment
+* Does include a search/replace script called [magicreplace](https://github.com/vielhuber/magicreplace)
+
 ## Installation
 
 ```
@@ -33,6 +42,9 @@ A simple example looks like this:
 		"username": "EXAMPLE",
 		"password": "EXAMPLE",
 		"ssh": false
+	},
+	"replace": {
+		"foo": "bar"
 	}
 }
 ```
