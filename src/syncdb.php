@@ -1,7 +1,5 @@
 <?php
-namespace vielhuber\syncdb;
-use vielhuber\magicreplace\magicreplace;
-class syncdb
+class SyncDB
 {
 	public static $debug = false;
 
@@ -183,4 +181,4 @@ if (!isset($argv) || empty($argv) || !isset($argv[1]) || !file_exists('profiles/
 	die('missing profile');
 }
 
-syncdb::sync($argv[1]);
+SyncDB::sync($argv[1]);

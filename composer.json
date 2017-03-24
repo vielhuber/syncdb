@@ -1,0 +1,14 @@
+{
+    "name": "vielhuber/syncdb",
+    "description": "Syncs a database (mysql, pgsql) between two servers (optional via ssh tunnel).",
+    "require": {
+        "php": ">=5.6",
+        "vielhuber/magicreplace": "*",
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+	        "vielhuber\\syncdb\\": "src/"
+    	}
+    }
+}
