@@ -1,4 +1,4 @@
-# 💖 syncdb 💖
+# 🔥 syncdb 🔥
 
 syncdb syncs databases (mysql, pgsql) between two servers (optional via ssh tunnel).
 
@@ -24,7 +24,7 @@ Simply put your desired configuration files in /profiles/.
 
 A simple example looks like this:
 
-```
+```json
 {
 	"engine": "mysql",
 	"source": {
