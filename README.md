@@ -1,12 +1,13 @@
 # 🔥 syncdb 🔥
 
-syncdb syncs databases (mysql, pgsql) between two servers (optional via ssh tunnel).
+syncdb syncs databases between two servers.
 
 ## Features
 
 * Most common use case: Sync your production database to your local environment
 * You also can sync between any servers, even from remote to remote (without local)
 * Works with direct database connections or via ssh tunnels
+* Currently supports mysql, postgresql support will be added soon
 * Has also a fast mode where the sql file is zipped
 * (Remote) commands like mysqldump, mysql, zip, e.g. can be overwritten manually to fit any environment
 * Does include a search/replace mechanism called [magicreplace](https://github.com/vielhuber/magicreplace)
@@ -54,5 +55,5 @@ You can find more examples in the profiles folder.
 ## Usage
 
 ```
-php syncdb.php profile-name
+syncdb profile-name
 ```
