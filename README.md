@@ -2,25 +2,25 @@
 
 syncdb syncs databases (mysql, pgsql) between two servers (optional via ssh tunnel).
 
-## Key benefits
+## Features
 
 * Most common use case: Sync your production database to your local environment
 * You also can sync between any servers, even from remote to remote (without local)
 * Works with direct database connections or via ssh tunnels
 * Has also a fast mode where the sql file is zipped
-* (Remote) commmands like mysqldump, mysql and zip can be overwritten manually to fit any environment
-* Does include a search/replace script called [magicreplace](https://github.com/vielhuber/magicreplace)
+* (Remote) commands like mysqldump, mysql, zip, e.g. can be overwritten manually to fit any environment
+* Does include a search/replace mechanism called [magicreplace](https://github.com/vielhuber/magicreplace)
 
 ## Installation
 
 ```
 composer require vielhuber/syncdb
 ```
-for global usage add the folder /vendor/vielhuber/syncdb/src/ to your PATH environment
+If you want to use it globally, also add the folder /vendor/vielhuber/syncdb/src/ to your PATH environment.
 
 ## Configuration
 
-Simply put your desired configuration files in /profiles/.
+Simply put your desired configuration files in /profiles/profile-name.json.
 
 A simple example looks like this:
 
@@ -49,7 +49,7 @@ A simple example looks like this:
 }
 ```
 
-You can find more complex examples in the profiles folder.
+You can find more examples in the profiles folder.
 
 ## Usage
 
