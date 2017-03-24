@@ -122,7 +122,7 @@ class syncdb
 					self::executeCommand($command, "--- SEARCH/REPLACE...");
 				}
 
-				// new
+				// new				
 				/*
 				{
 					$search = '["'.implode('","',array_keys((array)$config->replace)).'"]';

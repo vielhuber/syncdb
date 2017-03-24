@@ -11,7 +11,9 @@ for global usage add the folder /vendor/vielhuber/syncdb/src/ to your PATH envir
 
 ## Configuration
 
-Simply put your desired configuration files in the profiles folder. A simple example looks like this:
+Simply put your desired configuration files in /profiles/.
+
+A simple example looks like this:
 
 ```
 {
@@ -35,7 +37,7 @@ Simply put your desired configuration files in the profiles folder. A simple exa
 }
 ```
 
-You can also find more complex examples there.
+You can find more complex examples in the profiles folder.
 
 ## Usage
 
