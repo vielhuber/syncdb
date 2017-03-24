@@ -9,8 +9,8 @@ syncdb syncs databases between two servers.
 * Works with direct database connections or via ssh tunnels
 * Currently supports mysql, postgresql support will be added soon
 * Has also a fast mode where the sql file is zipped
-* (Remote) commands like mysqldump, mysql, zip, e.g. can be overwritten manually to fit any environment
 * Does include a search/replace mechanism called [magicreplace](https://github.com/vielhuber/magicreplace)
+* (Remote) commands like mysqldump, mysql, zip, e.g. can be overwritten manually to fit any environment
 
 ## Installation
 
