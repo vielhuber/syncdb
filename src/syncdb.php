@@ -11,6 +11,8 @@ class syncdb
 
 		$config = json_decode(file_get_contents('../profiles/' . $profile . '.json'));
 		$tmp_filename = "db_" . md5(uniqid()) . ".sql";
+		$escape_target = '';
+		if (isset($config->target->ssh) && $config->target->ssh !== false) { $escape_target = '\\'; }
 
 		// clean up files
 		foreach(glob('db_*.sql') as $file){
@@ -95,7 +97,7 @@ class syncdb
 				$command .= "ssh -o StrictHostKeyChecking=no " . ((isset($config->target->ssh->port)) ? (" -p \"" . $config->target->ssh->port . "\"") : ("")) . " " . ((isset($config->target->ssh->key)) ? (" -i \"" . $config->target->ssh->key . "\"") : ("")) . " " . $config->target->ssh->username . "@" . $config->target->ssh->host . " \"";
 			}
 
-			$command .= "\"" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . "\" -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p\"" . $config->target->password . "\" -e \"drop database if exists `" . $config->target->database . "`; create database `" . $config->target->database . "`;\"";
+			$command .= "\"" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . "\" -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p\"" . $config->target->password . "\" -e ".$escape_target."\"drop database if exists ".$escape_target."`" . $config->target->database . "".$escape_target."`; create database ".$escape_target."`" . $config->target->database . "".$escape_target."`;".$escape_target."\"";
 
 			if (isset($config->target->ssh) && $config->target->ssh !== false)
 			{
@@ -111,39 +113,15 @@ class syncdb
 			{
 				$command .= "ssh -o StrictHostKeyChecking=no " . ((isset($config->target->ssh->port)) ? (" -p \"" . $config->target->ssh->port . "\"") : ("")) . " " . ((isset($config->target->ssh->key)) ? (" -i \"" . $config->target->ssh->key . "\"") : ("")) . " " . $config->target->ssh->username . "@" . $config->target->ssh->host . " \"";
 			}
-
-			$command .= "\"" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . "\" -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p\"" . $config->target->password . "\" " . $config->target->database . " --default-character-set=utf8 < \"" . $tmp_filename . "\"";
+			$command .= "\"" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . "\" -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p\"" . $config->target->password . "\" " . $config->target->database . " --default-character-set=utf8";
 			if (isset($config->target->ssh) && $config->target->ssh !== false)
 			{
 				$command .= "\"";
 			}
+			$command .= " < \"" . $tmp_filename . "\"";
 
 			self::executeCommand($command, "--- PUSHING NEW DATABASE...", true);
 
-			// replace e.g. with the help of https://github.com/interconnectit/Search-Replace-DB
-			// therefore place this script inside search-replace-db
-			/*
-			if (isset($config->replace))
-			{
-				if (isset($config->target->ssh) && $config->target->ssh !== false)
-				{
-					$command = "ssh -o StrictHostKeyChecking=no " . ((isset($config->target->ssh->port)) ? (" -p \"" . $config->target->ssh->port . "\"") : ("")) . " " . ((isset($config->target->ssh->key)) ? (" -i \"" . $config->target->ssh->key . "\"") : ("")) . " -M -S my-ctrl-socket -fnNT -L 50000:localhost:" . $config->target->port . " " . $config->target->ssh->username . "@" . $config->target->ssh->host . "";
-					self::executeCommand($command, "--- OPENING UP SSH TUNNEL...");
-				}
-
-				foreach($config->replace as $search => $replace)
-				{
-					$command = "php search-replace-db/srdb.cli.php -h " . $config->target->host . " -n " . $config->target->database . " -u " . $config->target->username . " -p \"" . $config->target->password . "\" --port " . $config->target->port . " -s \"" . $search . "\" -r \"" . $replace . "\"";
-					self::executeCommand($command, "--- SEARCH/REPLACE...");
-				}
-
-				if (isset($config->target->ssh) && $config->target->ssh !== false)
-				{
-					$command = "ssh -o StrictHostKeyChecking=no " . ((isset($config->target->ssh->port)) ? (" -p \"" . $config->target->ssh->port . "\"") : ("")) . " " . ((isset($config->target->ssh->key)) ? (" -i \"" . $config->target->ssh->key . "\"") : ("")) . " -S my-ctrl-socket -O exit " . $config->target->ssh->username . "@" . $config->target->ssh->host . "";
-					self::executeCommand($command, "--- CLOSING SSH TUNNEL...");
-				}
-			}
-			*/
 		}
 
 		if ($config->engine == "pgsql")
