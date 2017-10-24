@@ -4,5 +4,6 @@
 !/profiles/example3.json
 !/profiles/example4.json
 /src/*.sql
+/src/*.zip
 /vendor/
 composer.lock
