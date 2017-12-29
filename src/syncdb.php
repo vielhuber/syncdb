@@ -30,7 +30,7 @@ class syncdb
 				$command .= "ssh -o StrictHostKeyChecking=no " . ((isset($config->source->ssh->port)) ? (" -p \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"";
 			}
 
-			$command .= "\"".(isset($config->source->cmd) ? ($config->source->cmd) : ("mysqldump")) . "\" -h " . $config->source->host . " --port " . $config->source->port . " -u " . $config->source->username . " -p\"" . $config->source->password . "\" --skip-add-locks --skip-comments --extended-insert=false --disable-keys=false --quick " . $config->source->database . "";
+			$command .= "\"".(isset($config->source->cmd) ? ($config->source->cmd) : ("mysqldump")) . "\" -h " . $config->source->host . " --port " . $config->source->port . " -u " . $config->source->username . " -p\"\"" . $config->source->password . "\"\" --skip-add-locks --skip-comments --extended-insert=false --disable-keys=false --quick " . $config->source->database . "";
 			if (isset($config->source->ssh) && $config->source->ssh !== false && isset($config->source->ssh->type) && $config->source->ssh->type == 'fast')
 			{
 				$command .= " > " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . "\"";
@@ -97,7 +97,7 @@ class syncdb
 				$command .= "ssh -o StrictHostKeyChecking=no " . ((isset($config->target->ssh->port)) ? (" -p \"" . $config->target->ssh->port . "\"") : ("")) . " " . ((isset($config->target->ssh->key)) ? (" -i \"" . $config->target->ssh->key . "\"") : ("")) . " " . $config->target->ssh->username . "@" . $config->target->ssh->host . " \"";
 			}
 
-			$command .= "\"" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . "\" -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p\"" . $config->target->password . "\" -e ".$escape_target."\"drop database if exists ".$escape_target."`" . $config->target->database . "".$escape_target."`; create database ".$escape_target."`" . $config->target->database . "".$escape_target."`;".$escape_target."\"";
+			$command .= "\"" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . "\" -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p\"\"" . $config->target->password . "\"\" -e ".$escape_target."\"drop database if exists ".$escape_target."`" . $config->target->database . "".$escape_target."`; create database ".$escape_target."`" . $config->target->database . "".$escape_target."`;".$escape_target."\"";
 
 			if (isset($config->target->ssh) && $config->target->ssh !== false)
 			{
@@ -113,7 +113,7 @@ class syncdb
 			{
 				$command .= "ssh -o StrictHostKeyChecking=no " . ((isset($config->target->ssh->port)) ? (" -p \"" . $config->target->ssh->port . "\"") : ("")) . " " . ((isset($config->target->ssh->key)) ? (" -i \"" . $config->target->ssh->key . "\"") : ("")) . " " . $config->target->ssh->username . "@" . $config->target->ssh->host . " \"";
 			}
-			$command .= "\"" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . "\" -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p\"" . $config->target->password . "\" " . $config->target->database . " --default-character-set=utf8";
+			$command .= "\"" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . "\" -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p\"\"" . $config->target->password . "\"\" " . $config->target->database . " --default-character-set=utf8";
 			if (isset($config->target->ssh) && $config->target->ssh !== false)
 			{
 				$command .= "\"";
