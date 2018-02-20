@@ -16,11 +16,12 @@ syncdb syncs databases between two servers.
 ## Installation
 
 ```bash
-mkdir ~/.syncdb && cd "$_"
+mkdir ~/.syncdb
+cd ~/.syncdb
 composer require vielhuber/syncdb
-chmod +x ~/.syncdb/vendor/vielhuber/syncdb/src/syncdb
-sudo ln -s ~/.syncdb/vendor/vielhuber/syncdb/src/syncdb /usr/local/bin/syncdb
+chmod +x vendor/vielhuber/syncdb/src/syncdb
 ```
+now add ~/.syncdb/vendor/vielhuber/syncdb/src/syncdb to your path environment.
 
 ## Update
 

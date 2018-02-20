@@ -1,16 +1,34 @@
 #!/usr/bin/php
 <?php
 namespace vielhuber\syncdb;
-require __DIR__.'/../../../autoload.php';
+require_once(syncdb::getBasepath().'/vendor/autoload.php');
 use vielhuber\magicreplace\magicreplace;
 class syncdb
 {
 	public static $debug = false;
 
+    public static function getBasepath()
+    {
+        // if this is installed via composer, then we have to go up 3 levels
+        if( file_exists( dirname(__DIR__,3).'/vendor/autoload.php' ) )
+        {
+            return dirname(__DIR__,3);
+        }
+        // if otherwise the git repo is cloned, we go up 1 level
+        elseif( file_exists( dirname(__DIR__,1).'/vendor/autoload.php' ) )
+        {
+           return dirname(__DIR__,1);
+        }
+        else
+        {
+            throw new \Exception('wrong path');
+        }
+    }
+
 	public static function sync($profile)
 	{
 
-		$config = json_decode(file_get_contents(__DIR__.'/../../../../profiles/' . $profile . '.json'));
+		$config = json_decode(file_get_contents(syncdb::getBasepath().'/profiles/' . $profile . '.json'));
 		$tmp_filename = 'db_' . md5(uniqid()) . '.sql';
 
 		// clean up files
@@ -188,7 +206,7 @@ class syncdb
 
 // usage from command line
 
-if (!isset($argv) || empty($argv) || !isset($argv[1]) || !file_exists(__DIR__.'/../../../../profiles/' . $argv[1] . '.json'))
+if (!isset($argv) || empty($argv) || !isset($argv[1]) || !file_exists(syncdb::getBasepath().'/profiles/' . $argv[1] . '.json'))
 {
 	die('missing profile'.PHP_EOL);
 }
