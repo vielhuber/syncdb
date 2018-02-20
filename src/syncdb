@@ -9,10 +9,10 @@ class syncdb
 
     public static function getBasepath()
     {
-        // if this is installed via composer, then we have to go up 3 levels
-        if( file_exists( dirname(__DIR__,3).'/vendor/autoload.php' ) )
+        // if this is installed via composer, then we have to go up 4 levels
+        if( file_exists( dirname(__DIR__,4).'/vendor/autoload.php' ) )
         {
-            return dirname(__DIR__,3);
+            return dirname(__DIR__,4);
         }
         // if otherwise the git repo is cloned, we go up 1 level
         elseif( file_exists( dirname(__DIR__,1).'/vendor/autoload.php' ) )
