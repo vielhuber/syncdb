@@ -15,38 +15,43 @@ syncdb syncs databases between two servers.
 ## Installation
 
 ```
+mkdir ~/syncdb
+cd ~/syncdb
 composer require vielhuber/syncdb
+nano ~/.bashrc
+export PATH=$PATH:~/syncdb/vendor/vielhuber/syncdb/src
+source ~/.bashrc
+chmod +x ~/syncdb/vendor/vielhuber/syncdb/src/syncdb
 ```
-If you want to use it globally, also add the folder /vendor/vielhuber/syncdb/src/ to your PATH environment.
 
 ## Configuration
 
-Simply put your desired configuration files in /profiles/profile-name.json.
+Simply put your desired configuration files in ~/syncdb/vendor/vielhuber/syncdb/profiles/profile-name.json.
 
-A simple example looks like this:
+An easy example looks like this:
 
 ```json
 {
-	"engine": "mysql",
-	"source": {
-		"host": "127.0.0.1",
-		"port": "3307",
-		"database": "EXAMPLE",
-		"username": "EXAMPLE",
-		"password": "EXAMPLE",
-		"ssh": false
-	},
-	"target": {
-		"host": "127.0.0.1",
-		"port": "3306",
-		"database": "EXAMPLE",
-		"username": "EXAMPLE",
-		"password": "EXAMPLE",
-		"ssh": false
-	},
-	"replace": {
-		"foo": "bar"
-	}
+    "engine": "mysql",
+    "source": {
+        "host": "127.0.0.1",
+        "port": "3307",
+        "database": "EXAMPLE",
+        "username": "EXAMPLE",
+        "password": "EXAMPLE",
+        "ssh": false
+    },
+    "target": {
+        "host": "127.0.0.1",
+        "port": "3306",
+        "database": "EXAMPLE",
+        "username": "EXAMPLE",
+        "password": "EXAMPLE",
+        "ssh": false
+    },
+    "replace": {
+        "foo": "bar"
+    }
 }
 ```
 
