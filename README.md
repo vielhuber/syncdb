@@ -35,7 +35,8 @@ composer update
 Simply put your desired configuration files in ~/.syncdb/profiles/profile-name.json:
 
 ```bash
-mkdir ~/.syncdb/profiles && cd "$_"
+mkdir ~/.syncdb/profiles
+cd ~/.syncdb/profiles
 nano example.json
 ```
 
