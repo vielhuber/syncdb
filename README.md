@@ -60,8 +60,8 @@ nano example.json
         "ssh": false
     },
     "replace": {
-		"https://www.example.com": "http://www.example.local",
-		"www.example.com": "www.example.local"
+        "https://www.example.com": "http://www.example.local",
+        "www.example.com": "www.example.local"
     }
 }
 ```
