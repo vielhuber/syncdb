@@ -11,26 +11,29 @@ syncdb syncs databases between two servers.
 * Has also a fast mode where the sql file is zipped
 * Does include a search/replace mechanism called [magicreplace](https://github.com/vielhuber/magicreplace)
 * (Remote) commands like mysqldump, mysql, zip, e.g. can be overwritten manually to fit any environment
+* Works on windows, mac and linux
 
 ## Installation
 
-```
+```bash
 mkdir ~/.syncdb && cd "$_"
 composer require vielhuber/syncdb
-echo "export PATH=$PATH:~/.syncdb/vendor/vielhuber/syncdb/src" >> ~/.bashrc && source ~/.bashrc
-chmod +x ~/.syncdb/vielhuber/syncdb/src/syncdb
+chmod +x ~/.syncdb/vendor/vielhuber/syncdb/src/syncdb
+sudo ln -s ~/.syncdb/vendor/vielhuber/syncdb/src/syncdb /usr/local/bin/syncdb
 ```
 
 ## Update
 
+```bash
 cd ~/.syncdb
 composer update
+```
 
 ## Configuration
 
 Simply put your desired configuration files in ~/.syncdb/profiles/profile-name.json:
 
-```
+```bash
 mkdir ~/.syncdb/profiles && cd "$_"
 nano example.json
 ```
@@ -39,11 +42,12 @@ nano example.json
 {
     "engine": "mysql",
     "source": {
-        "host": "127.0.0.1",
+        "host": "200.10.10.10",
         "port": "3307",
         "database": "EXAMPLE",
         "username": "EXAMPLE",
         "password": "EXAMPLE",
+        "cmd": "mysqldump",
         "ssh": false
     },
     "target": {
@@ -52,10 +56,12 @@ nano example.json
         "database": "EXAMPLE",
         "username": "EXAMPLE",
         "password": "EXAMPLE",
+        "cmd": "mysql",
         "ssh": false
     },
     "replace": {
-        "foo": "bar"
+		"https://www.example.com": "http://www.example.local",
+		"www.example.com": "www.example.local"
     }
 }
 ```
@@ -64,6 +70,6 @@ You can find more examples in the profiles folder in this git repo.
 
 ## Usage
 
-```
+```bash
 syncdb profile-name
 ```
