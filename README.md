@@ -15,20 +15,25 @@ syncdb syncs databases between two servers.
 ## Installation
 
 ```
-mkdir ~/syncdb
-cd ~/syncdb
+mkdir ~/.syncdb && cd "$_"
 composer require vielhuber/syncdb
-nano ~/.bashrc
-export PATH=$PATH:~/syncdb/vendor/vielhuber/syncdb/src
-source ~/.bashrc
-chmod +x ~/syncdb/vendor/vielhuber/syncdb/src/syncdb
+echo "export PATH=$PATH:~/.syncdb/vendor/vielhuber/syncdb/src" >> ~/.bashrc && source ~/.bashrc
+chmod +x ~/.syncdb/vielhuber/syncdb/src/syncdb
 ```
+
+## Update
+
+cd ~/.syncdb
+composer update
 
 ## Configuration
 
-Simply put your desired configuration files in ~/syncdb/vendor/vielhuber/syncdb/profiles/profile-name.json.
+Simply put your desired configuration files in ~/.syncdb/profiles/profile-name.json:
 
-An easy example looks like this:
+```
+mkdir ~/.syncdb/profiles && cd "$_"
+nano example.json
+```
 
 ```json
 {
@@ -55,7 +60,7 @@ An easy example looks like this:
 }
 ```
 
-You can find more examples in the profiles folder.
+You can find more examples in the profiles folder in this git repo.
 
 ## Usage
 

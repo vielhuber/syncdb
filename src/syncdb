@@ -10,7 +10,7 @@ class syncdb
 	public static function sync($profile)
 	{
 
-		$config = json_decode(file_get_contents(__DIR__.'/../profiles/' . $profile . '.json'));
+		$config = json_decode(file_get_contents(__DIR__.'/../../../../profiles/' . $profile . '.json'));
 		$tmp_filename = 'db_' . md5(uniqid()) . '.sql';
 
 		// clean up files
@@ -188,7 +188,7 @@ class syncdb
 
 // usage from command line
 
-if (!isset($argv) || empty($argv) || !isset($argv[1]) || !file_exists(__DIR__.'/../profiles/' . $argv[1] . '.json'))
+if (!isset($argv) || empty($argv) || !isset($argv[1]) || !file_exists(__DIR__.'/../../../../profiles/' . $argv[1] . '.json'))
 {
 	die('missing profile'.PHP_EOL);
 }
