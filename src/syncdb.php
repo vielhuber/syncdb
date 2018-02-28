@@ -51,12 +51,16 @@ class syncdb
 			unset($config->target->ssh->key);
 		}
 
+        echo '- PROFILE: '.$profile . PHP_EOL;
+
 		$tmp_filename = 'db_' . md5(uniqid()) . '.sql';
 
 		// clean up files
+        /*
 		foreach(glob('db_*.sql') as $file){
 		  if(is_file($file)) { unlink($file); }
 		}
+        */
 
 		if ($config->engine == 'mysql')
 		{
@@ -149,7 +153,7 @@ class syncdb
 			}
 			if ( self::getOs() === 'windows' )
 			{
-				$quote = '\"';
+				$quote = "\"";
 			}
 			else
 			{
@@ -195,7 +199,7 @@ class syncdb
 
 		}
 
-		unlink($tmp_filename);
+		@unlink($tmp_filename);
 	}
 
 	public static function executeCommand($command, $message, $suppress_output = false)
