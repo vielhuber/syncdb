@@ -55,12 +55,10 @@ class syncdb
 
 		$tmp_filename = 'db_' . md5(uniqid()) . '.sql';
 
-		// clean up files
-        /*
+		// clean up files        
 		foreach(glob('db_*.sql') as $file){
 		  if(is_file($file)) { unlink($file); }
 		}
-        */
 
 		if ($config->engine == 'mysql')
 		{
@@ -120,6 +118,13 @@ class syncdb
 					self::executeCommand($command, "--- DELETING REMOTE TMP DATABASE...", true);
 				}
 			}
+
+            if( !file_exists($tmp_filename) || file_get_contents($tmp_filename) == '' )
+            {
+                echo '--- AN ERROR OCCURED!';
+                @unlink($tmp_filename);
+                die();
+            }
 
 			// replacing corrupt collations
 			$search_replace_collation = file_get_contents($tmp_filename);
