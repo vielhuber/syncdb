@@ -6,6 +6,20 @@ class syncdb
 {
 	public static $debug = false;
 
+	public static function getOs()
+	{
+		if( stristr(PHP_OS, 'DAR') ) { return 'mac'; }
+		if( stristr(PHP_OS, 'WIN') ) { return 'windows'; }
+		if( stristr(PHP_OS, 'LINUX') ) { return 'linux'; }
+		return 'unknown';
+	}
+
+	public static function getDoubleQuote()
+	{
+		if( self::getOs() === 'windows' ) { return '""'; }
+		return '\'';
+	}
+
     public static function getBasepath()
     {
         // if this is installed via composer, then we have to go up 4 levels
@@ -29,10 +43,12 @@ class syncdb
 
 		$config = json_decode(file_get_contents(syncdb::getBasepath().'/profiles/' . $profile . '.json'));
 
-		if( strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN' )
+		if( self::getOs() !== 'windows' )
 		{
 			unset($config->source->cmd);
+			unset($config->source->ssh->key);
 			unset($config->target->cmd);
+			unset($config->target->ssh->key);
 		}
 
 		$tmp_filename = 'db_' . md5(uniqid()) . '.sql';
@@ -53,7 +69,7 @@ class syncdb
 				$command .= "ssh -o StrictHostKeyChecking=no " . ((isset($config->source->ssh->port)) ? (" -p \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"";
 			}
 
-			$command .= "\"".(isset($config->source->cmd) ? ($config->source->cmd) : ("mysqldump")) . "\" -h " . $config->source->host . " --port " . $config->source->port . " -u " . $config->source->username . " -p\"\"" . $config->source->password . "\"\" --skip-add-locks --skip-comments --extended-insert=false --disable-keys=false --quick " . $config->source->database . "";
+			$command .= "\"".(isset($config->source->cmd) ? ($config->source->cmd) : ("mysqldump")) . "\" -h " . $config->source->host . " --port " . $config->source->port . " -u " . $config->source->username . " -p".self::getDoubleQuote()."" . $config->source->password . "".self::getDoubleQuote()." --skip-add-locks --skip-comments --extended-insert=false --disable-keys=false --quick " . $config->source->database . "";
 			if (isset($config->source->ssh) && $config->source->ssh !== false && isset($config->source->ssh->type) && $config->source->ssh->type == 'fast')
 			{
 				$command .= " > " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . "\"";
@@ -131,7 +147,7 @@ class syncdb
 			{
 				$escape = '';
 			}
-			if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN')
+			if ( self::getOs() === 'windows' )
 			{
 				$quote = '\"';
 			}
@@ -144,7 +160,7 @@ class syncdb
 			$command .= "-h " . $config->target->host . " ";
 			$command .= "--port " . $config->target->port . " ";
 			$command .= "-u " . $config->target->username . " ";
-			$command .= "-p\"\"" . $config->target->password . "\"\" ";
+			$command .= "-p".self::getDoubleQuote()."" . $config->target->password . "".self::getDoubleQuote()." ";
 			$command .= "-e ".$escape."".$quote."drop database if exists ".$escape."`".$config->target->database."".$escape."`; create database ".$escape."`".$config->target->database."".$escape."`;".$escape."".$quote."";
 
 			if (isset($config->target->ssh) && $config->target->ssh !== false)
@@ -161,7 +177,7 @@ class syncdb
 			{
 				$command .= "ssh -o StrictHostKeyChecking=no " . ((isset($config->target->ssh->port)) ? (" -p \"" . $config->target->ssh->port . "\"") : ("")) . " " . ((isset($config->target->ssh->key)) ? (" -i \"" . $config->target->ssh->key . "\"") : ("")) . " " . $config->target->ssh->username . "@" . $config->target->ssh->host . " \"";
 			}
-			$command .= "\"" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . "\" -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p\"\"" . $config->target->password . "\"\" " . $config->target->database . " --default-character-set=utf8";
+			$command .= "\"" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . "\" -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p".self::getDoubleQuote()."" . $config->target->password . "".self::getDoubleQuote()." " . $config->target->database . " --default-character-set=utf8";
 			if (isset($config->target->ssh) && $config->target->ssh !== false)
 			{
 				$command .= "\"";
@@ -191,7 +207,7 @@ class syncdb
 
 		if( $suppress_output === true )
 		{
-			if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN')
+			if ( self::getOs() === 'windows' )
 			{
 				$command .= ' 2> nul';
 			}
