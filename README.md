@@ -21,13 +21,19 @@ cd ~/.syncdb
 composer require vielhuber/syncdb
 chmod +x vendor/vielhuber/syncdb/src/syncdb
 ```
-now add ~/.syncdb/vendor/vielhuber/syncdb/src/syncdb to your path environment.
+now add ~/.syncdb/vendor/vielhuber/syncdb/src/ to your path environment.
 
 ## Update
 
 ```bash
 cd ~/.syncdb
 composer update
+```
+
+## Usage
+
+```bash
+syncdb profile-name
 ```
 
 ## Configuration
@@ -53,7 +59,7 @@ nano example.json
         "ssh": false
     },
     "target": {
-        "host": "127.0.0.1",
+        "host": "localhost",
         "port": "3306",
         "database": "EXAMPLE",
         "username": "EXAMPLE",
@@ -69,9 +75,3 @@ nano example.json
 ```
 
 You can find more examples in the profiles folder in this git repo.
-
-## Usage
-
-```bash
-syncdb profile-name
-```
