@@ -14,10 +14,18 @@ class syncdb
 		return 'unknown';
 	}
 
-	public static function getDoubleQuote()
+	public static function escapePassword($password, $ssh = null)
 	{
-		if( self::getOs() === 'windows' ) { return '""'; }
-		return '\'';
+		$password = str_replace('$','\$',$password);
+		if( isset($ssh) && $ssh !== null && $ssh != '' )
+		{
+			$password = '\\"'.$password.'\\"';
+		}
+		else
+		{
+			$password = '"'.$password.'"';
+		}
+		return $password;
 	}
 
     public static function getBasepath()
@@ -36,18 +44,39 @@ class syncdb
         {
             throw new \Exception('wrong path');
         }
-    }
+	}
+	
+	public static function cleanUp()
+	{
+		foreach(glob('{,.}*', GLOB_BRACE) as $file)
+		{
+			if(is_file($file) && !in_array($file, ['syncdb','syncdb.php','syncdb.bat']))
+			{
+				@unlink($file);
+			}
+		}
+	}
+
+	public static function readConfig($profile)
+	{
+		return json_decode(file_get_contents(self::getBasepath().'/profiles/' . $profile . '.json'));
+	}
 
 	public static function sync($profile)
 	{
-
-		$config = json_decode(file_get_contents(syncdb::getBasepath().'/profiles/' . $profile . '.json'));
+		$config = self::readConfig($profile);
 
 		if( self::getOs() !== 'windows' )
 		{
-			unset($config->source->cmd);
+			if (!isset($config->source->ssh) || $config->source->ssh == false)
+			{
+				unset($config->source->cmd);
+			}
 			unset($config->source->ssh->key);
-			unset($config->target->cmd);
+			if (!isset($config->target->ssh) || $config->target->ssh == false)
+			{
+				unset($config->target->cmd);
+			}
 			unset($config->target->ssh->key);
 		}
 
@@ -55,10 +84,7 @@ class syncdb
 
 		$tmp_filename = 'db_' . md5(uniqid()) . '.sql';
 
-		// clean up files        
-		foreach(glob('db_*.sql') as $file){
-		  if(is_file($file)) { unlink($file); }
-		}
+		self::cleanUp();
 
 		if ($config->engine == 'mysql')
 		{
@@ -71,11 +97,13 @@ class syncdb
 				$command .= "ssh -o StrictHostKeyChecking=no " . ((isset($config->source->ssh->port)) ? (" -p \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"";
 			}
 
-			$command .= "\"".(isset($config->source->cmd) ? ($config->source->cmd) : ("mysqldump")) . "\" -h " . $config->source->host . " --port " . $config->source->port . " -u " . $config->source->username . " -p".self::getDoubleQuote()."" . $config->source->password . "".self::getDoubleQuote()." --skip-add-locks --skip-comments --extended-insert=false --disable-keys=false --quick " . $config->source->database . "";
+			$command .= "\"".(isset($config->source->cmd) ? ($config->source->cmd) : ("mysqldump")) . "\" -h " . $config->source->host . " --port " . $config->source->port . " -u " . $config->source->username . " -p".self::escapePassword($config->source->password, @$config->source->ssh)." --skip-add-locks --skip-comments --extended-insert=false --disable-keys=false --quick " . $config->source->database . "";
+
 			if (isset($config->source->ssh) && $config->source->ssh !== false && isset($config->source->ssh->type) && $config->source->ssh->type == 'fast')
 			{
 				$command .= " > " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . "\"";
 			}
+
 			else
 			{
 				if (isset($config->source->ssh) && $config->source->ssh !== false)
@@ -99,11 +127,17 @@ class syncdb
 				{
 					$command = "ssh -o StrictHostKeyChecking=no " . ((isset($config->source->ssh->port)) ? (" -p \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"" . "cd ".((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/'))." && zip -j -9 " . $tmp_filename . ".zip " . $tmp_filename . "\"";
 					self::executeCommand($command, "--- ZIPPING DATABASE...", true);
-					$command = "scp -o StrictHostKeyChecking=no -q -r " . ((isset($config->source->ssh->port)) ? (" -P \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . ":" . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . ".zip " . $tmp_filename . ".zip";
+					$command = "scp -o StrictHostKeyChecking=no -q -r " . ((isset($config->source->ssh->port)) ? (" -P \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . ":\"" . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . ".zip\" " . $tmp_filename . ".zip";
 					self::executeCommand($command, "--- COPYING DATABASE TO SOURCE...", true);
+					if( !file_exists($tmp_filename.'.zip') || filesize($tmp_filename.'.zip') == 0 )
+					{
+						echo '--- AN ERROR OCCURED!'.PHP_EOL;
+						self::cleanUp();
+						die();
+					}
 					$command = "unzip -j ".$tmp_filename.".zip";
 					self::executeCommand($command, "--- UNZIPPING ZIP FILE...");
-					$command = ((isset($config->source->ssh->rm))?($config->source->ssh->rm):('rm -f'))." ".$tmp_filename.".zip";
+					$command = ((self::getOs()=='windows')?('del'):('rm')).' -f '.$tmp_filename.'.zip';					
 					self::executeCommand($command, "--- DELETING LOCAL ZIP...");
 					$command = "ssh -o StrictHostKeyChecking=no " . ((isset($config->source->ssh->port)) ? (" -p \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"" . ((isset($config->source->ssh->rm))?($config->source->ssh->rm):('rm -f'))." " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . ".zip\"";
 					self::executeCommand($command, "--- DELETING REMOTE TMP ZIP...", true);
@@ -119,18 +153,24 @@ class syncdb
 				}
 			}
 
-            if( !file_exists($tmp_filename) || file_get_contents($tmp_filename) == '' )
+            if( !file_exists($tmp_filename) || filesize($tmp_filename) == 0 )
             {
-                echo '--- AN ERROR OCCURED!';
-                @unlink($tmp_filename);
+				echo '--- AN ERROR OCCURED!'.PHP_EOL;
+                self::cleanUp();
                 die();
             }
 
 			// replacing corrupt collations
-			$search_replace_collation = file_get_contents($tmp_filename);
-			$search_replace_collation = str_replace('CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci','CHARSET=utf8 COLLATE=utf8_general_ci',$search_replace_collation);
-			$search_replace_collation = str_replace('COLLATE utf8mb4_unicode_520_ci','COLLATE utf8_general_ci',$search_replace_collation);
-			file_put_contents($tmp_filename,$search_replace_collation);
+			// with sed (because we want not to have php memory limit issues)
+			// mac sed has a slightly different syntax than unix sed
+			shell_exec("sed 's/CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci/CHARSET=utf8 COLLATE=utf8_general_ci/g' ".$tmp_filename." > ".$tmp_filename."-sed");
+			rename( $tmp_filename."-sed", $tmp_filename );
+			shell_exec("sed 's/COLLATE utf8mb4_unicode_520_ci/COLLATE utf8_general_ci/g' ".$tmp_filename." > ".$tmp_filename."-sed");
+			rename( $tmp_filename."-sed", $tmp_filename );
+			//$search_replace_collation = file_get_contents($tmp_filename);
+			//$search_replace_collation = str_replace('CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci','CHARSET=utf8 COLLATE=utf8_general_ci',$search_replace_collation);
+			//$search_replace_collation = str_replace('COLLATE utf8mb4_unicode_520_ci','COLLATE utf8_general_ci',$search_replace_collation);
+			//file_put_contents($tmp_filename,$search_replace_collation);
 
 			// search / replace
 			if (isset($config->replace))
@@ -146,7 +186,6 @@ class syncdb
 			{
 				$command .= "ssh -o StrictHostKeyChecking=no " . ((isset($config->target->ssh->port)) ? (" -p \"" . $config->target->ssh->port . "\"") : ("")) . " " . ((isset($config->target->ssh->key)) ? (" -i \"" . $config->target->ssh->key . "\"") : ("")) . " " . $config->target->ssh->username . "@" . $config->target->ssh->host . " \"";
 			}
-
 
 			if (isset($config->target->ssh) && $config->target->ssh !== false)
 			{
@@ -165,12 +204,7 @@ class syncdb
 				$quote = "'";
 			}
 
-			$command .= "\"" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . "\" ";
-			$command .= "-h " . $config->target->host . " ";
-			$command .= "--port " . $config->target->port . " ";
-			$command .= "-u " . $config->target->username . " ";
-			$command .= "-p".self::getDoubleQuote()."" . $config->target->password . "".self::getDoubleQuote()." ";
-			$command .= "-e ".$escape."".$quote."drop database if exists ".$escape."`".$config->target->database."".$escape."`; create database ".$escape."`".$config->target->database."".$escape."`;".$escape."".$quote."";
+			$command .= "\"" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . "\" -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p".self::escapePassword($config->target->password, @$config->target->ssh)." -e ".$escape."".$quote."drop database if exists ".$escape."`".$config->target->database."".$escape."`; create database ".$escape."`".$config->target->database."".$escape."`;".$escape."".$quote."";
 
 			if (isset($config->target->ssh) && $config->target->ssh !== false)
 			{
@@ -186,7 +220,7 @@ class syncdb
 			{
 				$command .= "ssh -o StrictHostKeyChecking=no " . ((isset($config->target->ssh->port)) ? (" -p \"" . $config->target->ssh->port . "\"") : ("")) . " " . ((isset($config->target->ssh->key)) ? (" -i \"" . $config->target->ssh->key . "\"") : ("")) . " " . $config->target->ssh->username . "@" . $config->target->ssh->host . " \"";
 			}
-			$command .= "\"" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . "\" -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p".self::getDoubleQuote()."" . $config->target->password . "".self::getDoubleQuote()." " . $config->target->database . " --default-character-set=utf8";
+			$command .= "\"" . (isset($config->target->cmd) ? ($config->target->cmd) : ("mysql")) . "\" -h " . $config->target->host . " --port " . $config->target->port . " -u " . $config->target->username . " -p".self::escapePassword($config->target->password, @$config->target->ssh)." " . $config->target->database . " --default-character-set=utf8";
 			if (isset($config->target->ssh) && $config->target->ssh !== false)
 			{
 				$command .= "\"";
@@ -204,7 +238,7 @@ class syncdb
 
 		}
 
-		@unlink($tmp_filename);
+		self::cleanUp();
 	}
 
 	public static function executeCommand($command, $message, $suppress_output = false)
@@ -236,10 +270,8 @@ class syncdb
 }
 
 // usage from command line
-
 if (!isset($argv) || empty($argv) || !isset($argv[1]) || !file_exists(syncdb::getBasepath().'/profiles/' . $argv[1] . '.json'))
 {
 	die('missing profile'.PHP_EOL);
 }
-
 syncdb::sync($argv[1]);
