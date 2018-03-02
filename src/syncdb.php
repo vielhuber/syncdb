@@ -15,16 +15,30 @@ class syncdb
 	}
 
 	public static function escapePassword($password, $ssh = null)
-	{
-		$password = str_replace('$','\$',$password);
-		if( isset($ssh) && $ssh !== null && $ssh != '' )
-		{
-			$password = '\\"'.$password.'\\"';
-		}
-		else
-		{
-			$password = '"'.$password.'"';
-		}
+    {
+        if( self::getOs() === 'windows' )
+        {            
+            if( isset($ssh) && $ssh !== null && $ssh != '' )
+            {
+                $password = '""'.$password.'""';
+            }
+            else
+            {
+                $password = '"'.$password.'"';
+            }
+        }
+        else
+        {
+            $password = str_replace('$','\$',$password);
+            if( isset($ssh) && $ssh !== null && $ssh != '' )
+            {
+                $password = '\\"'.$password.'\\"';
+            }
+            else
+            {
+                $password = '"'.$password.'"';
+            }
+        }
 		return $password;
 	}
 
@@ -135,8 +149,8 @@ class syncdb
 						self::cleanUp();
 						die();
 					}
-					$command = "unzip -j ".$tmp_filename.".zip";
-					self::executeCommand($command, "--- UNZIPPING ZIP FILE...");
+					$command = "unzip -j -o ".$tmp_filename.".zip";
+					self::executeCommand($command, "--- UNZIPPING ZIP FILE...", true);
 					$command = ((self::getOs()=='windows')?('del'):('rm')).' -f '.$tmp_filename.'.zip';					
 					self::executeCommand($command, "--- DELETING LOCAL ZIP...");
 					$command = "ssh -o StrictHostKeyChecking=no " . ((isset($config->source->ssh->port)) ? (" -p \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " " . $config->source->ssh->username . "@" . $config->source->ssh->host . " \"" . ((isset($config->source->ssh->rm))?($config->source->ssh->rm):('rm -f'))." " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . ".zip\"";
