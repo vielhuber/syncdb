@@ -278,8 +278,6 @@ class syncdb
 			print_r($command);
 		}
 
-        die($command);
-
 		return shell_exec($command);
 	}
 
