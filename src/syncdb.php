@@ -141,7 +141,7 @@ class syncdb
 				{
 					$command = "ssh -o StrictHostKeyChecking=no " . ((isset($config->source->ssh->port)) ? (" -p \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " -l \"" . $config->source->ssh->username . "\" " . $config->source->ssh->host . " \"" . "cd ".((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/'))." && zip -j -9 " . $tmp_filename . ".zip " . $tmp_filename . "\"";
 					self::executeCommand($command, "--- ZIPPING DATABASE...", true);
-					$command = "scp -o StrictHostKeyChecking=no -q -r " . ((isset($config->source->ssh->port)) ? (" -P \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " -l \"" . $config->source->ssh->username . "\" " . $config->source->ssh->host . ":\"" . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . ".zip\" " . $tmp_filename . ".zip";
+					$command = "scp -o StrictHostKeyChecking=no -q -r " . ((isset($config->source->ssh->port)) ? (" -P \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " -o User=\"" . $config->source->ssh->username . "\" " . $config->source->ssh->host . ":\"" . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . ".zip\" " . $tmp_filename . ".zip";
 					self::executeCommand($command, "--- COPYING DATABASE TO SOURCE...", true);
 					if( !file_exists($tmp_filename.'.zip') || filesize($tmp_filename.'.zip') == 0 )
 					{
@@ -160,7 +160,7 @@ class syncdb
 				}
 				else
 				{
-					$command = "scp -o StrictHostKeyChecking=no -q -r " . ((isset($config->source->ssh->port)) ? (" -P \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " -l \"" . $config->source->ssh->username . "\" " . $config->source->ssh->host . ":" . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . " " . $tmp_filename . "";
+					$command = "scp -o StrictHostKeyChecking=no -q -r " . ((isset($config->source->ssh->port)) ? (" -P \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " -o User=\"" . $config->source->ssh->username . "\" " . $config->source->ssh->host . ":" . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . " " . $tmp_filename . "";
 					self::executeCommand($command, "--- COPYING DATABASE TO SOURCE...", true);
 					$command = "ssh -o StrictHostKeyChecking=no " . ((isset($config->source->ssh->port)) ? (" -p \"" . $config->source->ssh->port . "\"") : ("")) . " " . ((isset($config->source->ssh->key)) ? (" -i \"" . $config->source->ssh->key . "\"") : ("")) . " -l \"" . $config->source->ssh->username . "\" " . $config->source->ssh->host . " \"" . ((isset($config->source->ssh->rm))?($config->source->ssh->rm):('rm -f'))." " . ((isset($config->source->ssh->tmp_dir)) ? ($config->source->ssh->tmp_dir) : ('/tmp/')) . $tmp_filename . "\"";
 					self::executeCommand($command, "--- DELETING REMOTE TMP DATABASE...", true);
