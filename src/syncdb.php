@@ -9,7 +9,7 @@ class syncdb
 	public static function getOs()
 	{
 		if( stristr(PHP_OS, 'DAR') ) { return 'mac'; }
-		if( stristr(PHP_OS, 'WIN') ) { return 'windows'; }
+		if( stristr(PHP_OS, 'WIN') || stristr(PHP_OS, 'CYGWIN') ) { return 'windows'; }
 		if( stristr(PHP_OS, 'LINUX') ) { return 'linux'; }
 		return 'unknown';
 	}
