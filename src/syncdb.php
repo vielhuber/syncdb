@@ -242,6 +242,12 @@ class syncdb
 			$command .= " < \"" . $tmp_filename . "\"";
 
 			self::executeCommand($command, '--- PUSHING NEW DATABASE...', true);
+            if( self::logHasError() )
+            {
+                echo '--- AN ERROR OCCURED!'.PHP_EOL;
+                self::cleanUp();
+                die();
+            }
 
 		}
 
@@ -266,10 +272,12 @@ class syncdb
 		{
 			if ( self::getOs() === 'windows' )
 			{
-				$command .= ' 2> nul';
-			}
-			else {
-				$command .= ' 2>/dev/null';
+                $command .= ' 2> log.txt';
+                //$command .= ' 2> nul';
+            }
+            else {
+                $command .= ' 2> log.txt';
+				//$command .= ' 2>/dev/null';
 			}
 		}
 
@@ -280,6 +288,19 @@ class syncdb
 
 		return shell_exec($command);
 	}
+
+    public static function logHasError()
+    {
+        if( !file_exists('log.txt') )
+        {
+            return false;
+        }
+        $log = file_get_contents('log.txt');
+        if( stripos($log, 'error') !== false )
+        {
+            return true;
+        }
+    }
 
 }
 
