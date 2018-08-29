@@ -3,6 +3,7 @@
 !/profiles/example2.json
 !/profiles/example3.json
 !/profiles/example4.json
+!/profiles/example5.json
 /src/*.sql
 /src/*.zip
 /vendor/
