@@ -13,6 +13,16 @@ syncdb syncs databases between two servers.
 * (Remote) commands like mysqldump, mysql, zip, e.g. can be overwritten manually to fit any environment
 * Works on Linux, Mac and Windows (with Cygwin or WSL)
 
+## Requirements
+
+#### Mac
+```
+brew install coreutils
+```
+
+#### Windows
+Install [Cygwin](https://cygwin.com/install.html)
+
 ## Installation
 
 ```bash
