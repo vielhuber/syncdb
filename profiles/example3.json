@@ -1,32 +1,32 @@
 {
-	"engine": "mysql",
-	"source": {
-		"host": "127.0.0.1",
-		"port": "3307",
-		"database": "EXAMPLE",
-		"username": "EXAMPLE",
-		"password": "EXAMPLE",
-		"cmd": "mysql5dump",
-		"ssh": {
-			"type": "fast",
-			"zip": true,
+    "engine": "mysql",
+    "source": {
+        "host": "127.0.0.1",
+        "port": "3307",
+        "database": "EXAMPLE",
+        "username": "EXAMPLE",
+        "password": "EXAMPLE",
+        "cmd": "mysql5dump",
+        "ssh": {
+            "type": "fast",
+            "zip": true,
             "zip_compression": 9,
-			"tmp_dir": "/tmp/",	
-			"host": "EXAMPLE",
-			"username": "EXAMPLE",
-			"key": "C:\\Users\\David\\.ssh\\id_rsa"
-		}
-	},
-	"target": {
-		"host": "localhost",
-		"port": "3306",
-		"database": "EXAMPLE",
-		"username": "EXAMPLE",
-		"password": "EXAMPLE",
-		"cmd": "C:\\MAMP\\bin\\mysql\\bin\\mysql.exe",
-		"ssh": false
-	},
-	"replace": {
-		"foo": "bar"
-	}
+            "tmp_dir": "/tmp/", 
+            "host": "EXAMPLE",
+            "username": "EXAMPLE",
+            "key": "C:\\Users\\David\\.ssh\\id_rsa"
+        }
+    },
+    "target": {
+        "host": "localhost",
+        "port": "3306",
+        "database": "EXAMPLE",
+        "username": "EXAMPLE",
+        "password": "EXAMPLE",
+        "cmd": "C:\\MAMP\\bin\\mysql\\bin\\mysql.exe",
+        "ssh": false
+    },
+    "replace": {
+        "foo": "bar"
+    }
 }
