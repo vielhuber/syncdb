@@ -10,6 +10,7 @@
 		"ssh": {
 			"type": "fast",
 			"zip": true,
+            "zip_compression": 9,
 			"tmp_dir": "/tmp/",	
 			"host": "EXAMPLE",
 			"username": "EXAMPLE",
