@@ -426,7 +426,7 @@ class syncdb
             return false;
         }
         $log = file_get_contents('log.txt');
-        if (stripos($log, 'error') !== false || stripos($log, 'not found') !== false) {
+        if ((stripos($log, 'error') !== false && stripos($log, 'GTID_PURGED') === false) || stripos($log, 'not found') !== false) {
             return true;
         }
     }
