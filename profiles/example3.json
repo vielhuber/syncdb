@@ -6,7 +6,7 @@
         "database": "EXAMPLE",
         "username": "EXAMPLE",
         "password": "EXAMPLE",
-        "cmd": "mysql5dump",
+        "cmd": "mysql5dump --set-gtid-purged=OFF",
         "ssh": {
             "type": "fast",
             "zip": true,
@@ -14,7 +14,7 @@
             "tmp_dir": "/tmp/", 
             "host": "EXAMPLE",
             "username": "EXAMPLE",
-            "key": "C:\\Users\\David\\.ssh\\id_rsa"
+            "key": "~/.ssh/id_rsa"
         }
     },
     "target": {
@@ -23,7 +23,7 @@
         "database": "EXAMPLE",
         "username": "EXAMPLE",
         "password": "EXAMPLE",
-        "cmd": "C:\\MAMP\\bin\\mysql\\bin\\mysql.exe",
+        "cmd": "mysql",
         "ssh": false
     },
     "replace": {

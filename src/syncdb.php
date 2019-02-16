@@ -6,6 +6,8 @@ class syncdb
 {
     public static $debug = false;
 
+    public static $session_id = null;
+
     public static function getOs()
     {
         if (stristr(PHP_OS, 'DAR')) {
@@ -56,7 +58,7 @@ class syncdb
     public static function cleanUp()
     {
         foreach (glob('{,.}*', GLOB_BRACE) as $file) {
-            if (is_file($file) && !in_array($file, ['syncdb', 'syncdb.php', 'syncdb.bat'])) {
+            if (is_file($file) && strpos($file, self::$session_id) !== false) {
                 @unlink($file);
             }
         }
@@ -84,7 +86,9 @@ class syncdb
 
         echo '- PROFILE: ' . $profile . PHP_EOL;
 
-        $tmp_filename = 'db_' . md5(uniqid()) . '.sql';
+        self::$session_id = md5(uniqid());
+
+        $tmp_filename = self::$session_id . '.sql';
 
         self::cleanUp();
 
