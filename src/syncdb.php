@@ -58,8 +58,25 @@ class syncdb
     public static function cleanUp()
     {
         foreach (glob('{,.}*', GLOB_BRACE) as $file) {
-            if (is_file($file) && strpos($file, self::$session_id) !== false) {
-                @unlink($file);
+            if (is_file($file) && !in_array($file, ['syncdb', 'syncdb.php', 'syncdb.bat'])) {                
+                $filename = substr($file, 0, strpos($file, '.'));
+                $filename = substr($file, 0, 13);
+                print_r([$filename, self::$session_id]);
+                // other files (log file)
+                if( !is_numeric($filename) )
+                {
+                    @unlink($file);
+                }
+                // current session files
+                else if( $filename == self::$session_id )
+                {
+                    @unlink($file);
+                }
+                // abandoned, old files (if this file is older than 10 minutes)
+                else if( intval(self::$session_id) - intval($filename) > (60*10*1000) )
+                {
+                    @unlink($file);
+                }
             }
         }
     }
@@ -86,7 +103,7 @@ class syncdb
 
         echo '- PROFILE: ' . $profile . PHP_EOL;
 
-        self::$session_id = md5(uniqid());
+        self::$session_id = intval(microtime(true)*1000); // this is important for cleaning up
 
         $tmp_filename = self::$session_id . '.sql';
 
