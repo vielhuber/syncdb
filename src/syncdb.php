@@ -61,7 +61,6 @@ class syncdb
             if (is_file($file) && !in_array($file, ['syncdb', 'syncdb.php', 'syncdb.bat'])) {                
                 $filename = substr($file, 0, strpos($file, '.'));
                 $filename = substr($file, 0, 13);
-                print_r([$filename, self::$session_id]);
                 // other files (log file)
                 if( !is_numeric($filename) )
                 {
