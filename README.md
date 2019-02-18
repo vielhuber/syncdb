@@ -39,6 +39,7 @@ now add ~/.syncdb/vendor/vielhuber/syncdb/src/ to your path environment.
 ```bash
 cd ~/.syncdb
 composer update
+chmod +x vendor/vielhuber/syncdb/src/syncdb
 ```
 
 ## Usage
