@@ -32,7 +32,7 @@ cd ~/.syncdb
 composer require vielhuber/syncdb
 chmod +x vendor/vielhuber/syncdb/src/syncdb
 ```
-now add ~/.syncdb/vendor/vielhuber/syncdb/src/ to your path environment.
+now add ```~/.syncdb/vendor/vielhuber/syncdb/src/``` to your path environment.
 
 ## Update
 
