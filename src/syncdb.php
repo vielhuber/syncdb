@@ -87,6 +87,8 @@ class syncdb
 
     public static function sync($profile)
     {
+        $time = microtime(true);
+
         $config = self::readConfig($profile);
 
         if (self::getOs() !== 'windows') {
@@ -276,21 +278,21 @@ class syncdb
             }
 
             // replacing corrupt collations
-            // with sed (because we want not to have php memory limit issues)
-            // mac sed has a slightly different syntax than unix sed
-            shell_exec("sed 's/CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci/CHARSET=utf8 COLLATE=utf8_general_ci/g' " . $tmp_filename . ' > ' . $tmp_filename . '-sed');
-            rename($tmp_filename . '-sed', $tmp_filename);
-            shell_exec("sed 's/COLLATE utf8mb4_unicode_520_ci/COLLATE utf8_general_ci/g' " . $tmp_filename . ' > ' . $tmp_filename . '-sed');
-            rename($tmp_filename . '-sed', $tmp_filename);
-            //$search_replace_collation = file_get_contents($tmp_filename);
-            //$search_replace_collation = str_replace('CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci','CHARSET=utf8 COLLATE=utf8_general_ci',$search_replace_collation);
-            //$search_replace_collation = str_replace('COLLATE utf8mb4_unicode_520_ci','COLLATE utf8_general_ci',$search_replace_collation);
-            //file_put_contents($tmp_filename,$search_replace_collation);
+            // we do this with sed (because we want not to have php memory limit issues by using file_get_contents)
+            // mac sed has a slightly different syntax than unix sed (so inplace editing is a little bit tricky)
+            $time_tmp = microtime(true);
+            echo '--- DOING OPTIMIZATIONS...';
+            shell_exec("sed -i".(self::getOs()==='mac'?" ''":"")." -e 's/CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci/CHARSET=utf8 COLLATE=utf8_general_ci/g' -e 's/COLLATE utf8mb4_unicode_520_ci/COLLATE utf8_general_ci/g' -e '1s;^;\;SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, AUTOCOMMIT = 0\;SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS = 0\;SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS = 0\;;' -e '$ a \;SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS\;SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS\;SET AUTOCOMMIT = @OLD_AUTOCOMMIT\;COMMIT\;' ".$tmp_filename."");
+            echo ' ('.number_format(microtime(true)-$time_tmp,2). 's)';
+            echo PHP_EOL;
 
             // search / replace
             if (isset($config->replace)) {
+                $time_tmp = microtime(true);
+                echo '--- SEARCH/REPLACE...';
                 magicreplace::run($tmp_filename, $tmp_filename, $config->replace);
-                echo '--- SEARCH/REPLACE...' . PHP_EOL;
+                echo ' ('.number_format(microtime(true)-$time_tmp,2). 's)';
+                echo PHP_EOL;
             }
 
             // delete
@@ -389,7 +391,9 @@ class syncdb
             }
             $command .= " < \"" . $tmp_filename . "\"";
 
-            self::executeCommand($command, '--- PUSHING NEW DATABASE...');
+            self::executeCommand($command, '--- RESTORING DATABASE...');
+
+            echo '- FINISHED ('.number_format(microtime(true)-$time,2). 's)' . PHP_EOL;
         }
 
         if ($config->engine == 'pgsql') {
@@ -401,7 +405,9 @@ class syncdb
 
     public static function executeCommand($command, $message, $suppress_output = true)
     {
-        echo $message . PHP_EOL;
+        $time = microtime(true);
+
+        echo $message;
 
         // remove newlines
         $command = trim(preg_replace('/\s+/', ' ', $command));
@@ -423,6 +429,9 @@ class syncdb
         }
 
         shell_exec($command);
+
+        echo ' ('.number_format(microtime(true)-$time,2). 's)';
+        echo PHP_EOL;
 
         if (self::logHasError()) {
             echo '--- AN ERROR OCCURED!' . PHP_EOL;
