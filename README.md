@@ -24,7 +24,7 @@ brew install coreutils
 ```
 
 #### Windows
-Install all basic packages from [Cygwin](https://cygwin.com/install.html)
+Install all basic packages from [Cygwin](https://cygwin.com/install.html).
 
 ## Installation
 
@@ -34,7 +34,7 @@ cd ~/.syncdb
 composer require vielhuber/syncdb
 chmod +x vendor/vielhuber/syncdb/src/syncdb
 ```
-now add ```~/.syncdb/vendor/vielhuber/syncdb/src/``` to your path environment.
+Now add ```~/.syncdb/vendor/vielhuber/syncdb/src/``` to your path environment.
 
 ## Update
 
