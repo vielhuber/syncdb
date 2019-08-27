@@ -18,6 +18,7 @@ syncdb syncs databases between two servers.
 ## Requirements
 
 #### Mac
+Install [Homebrew](https://brew.sh)
 ```
 brew install coreutils
 ```

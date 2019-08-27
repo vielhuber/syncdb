@@ -282,7 +282,7 @@ class syncdb
             // mac sed has a slightly different syntax than unix sed (so inplace editing is a little bit tricky)
             $time_tmp = microtime(true);
             echo '--- DOING OPTIMIZATIONS...';
-            shell_exec("sed -i".(self::getOs()==='mac'?" ''":"")." -e 's/CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci/CHARSET=utf8 COLLATE=utf8_general_ci/g' -e 's/COLLATE utf8mb4_unicode_520_ci/COLLATE utf8_general_ci/g' -e '1s;^;\;SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, AUTOCOMMIT = 0\;SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS = 0\;SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS = 0\;;' -e '$ a \;SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS\;SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS\;SET AUTOCOMMIT = @OLD_AUTOCOMMIT\;COMMIT\;' ".$tmp_filename."");
+            shell_exec("sed -i".(self::getOs()==='mac'?" ''":"")." -e 's/CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci/CHARSET=utf8 COLLATE=utf8_general_ci/g' -e 's/COLLATE utf8mb4_unicode_520_ci/COLLATE utf8_general_ci/g' -e '1s;^;\;SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, AUTOCOMMIT = 0\;SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS = 0\;SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS = 0\;;' -e '$ a".(self::getOs()==='mac'?"\'$'\\n''":"")." \;SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS\;SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS\;SET AUTOCOMMIT = @OLD_AUTOCOMMIT\;COMMIT\;' ".$tmp_filename."");
             echo ' ('.number_format(microtime(true)-$time_tmp,2). 's)';
             echo PHP_EOL;
 
