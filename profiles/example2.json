@@ -23,6 +23,13 @@
 		"ssh": false
 	},
 	"replace": {
-		"foo": "bar"
+        "http://www.foo.com": "https://www.bar.local",
+        "https://www.foo.com": "https://www.bar.local",
+        "http://foo.com": "https://www.bar.local",
+        "https://foo.com": "https://www.bar.local",
+        "www.foo.com": "www.bar.local",
+        "foo.com": "bar.local",
+        "wpFastestCache.php": "wpFastestCache.OFF",
+        "wpFastestCachePremium.php": "wpFastestCachePremium.OFF"
 	}
 }
