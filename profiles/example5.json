@@ -6,7 +6,7 @@
 		"database": "EXAMPLE",
 		"username": "EXAMPLE",
 		"password": "EXAMPLE",
-		"cmd": "mysqldump --ignore-table=dbname.tblname",
+		"cmd": "mysqldump --ignore-table=dbname.tblname --routines",
 		"ssh": {			
 			"host": "EXAMPLE",
 			"username": "EXAMPLE",
