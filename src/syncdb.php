@@ -31,11 +31,12 @@ class syncdb
                 $password = '"' . $password . '"';
             }
         } else {
-            $password = str_replace('$', '\$', $password);
-            $password = str_replace('!', '\!', $password);
-            $password = str_replace('*', '\*', $password);
+            foreach(['*','?','[','<','>','&',';','!','|','$','(',')',' '] as $escape__value) {
+                $password = str_replace($escape__value, '\\'.$escape__value, $password);
+            }
             if (isset($ssh) && $ssh !== null && $ssh != '') {
-                $password = '\\"' . $password . '\\"';
+                // this is currently disabled (try out on other shells)
+                //$password = '\\"' . $password . '\\"';
             } else {
                 $password = '"' . $password . '"';
             }
