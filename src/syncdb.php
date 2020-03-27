@@ -33,6 +33,7 @@ class syncdb
         } else {
             $password = str_replace('$', '\$', $password);
             $password = str_replace('!', '\!', $password);
+            $password = str_replace('*', '\*', $password);
             if (isset($ssh) && $ssh !== null && $ssh != '') {
                 $password = '\\"' . $password . '\\"';
             } else {
