@@ -31,8 +31,8 @@ class syncdb
                 $password = '"' . $password . '"';
             }
         } else {
-            foreach(['*','?','[','<','>','&',';','!','|','$','(',')',' '] as $escape__value) {
-                $password = str_replace($escape__value, '\\'.$escape__value, $password);
+            foreach (['*', '?', '[', '<', '>', '&', ';', '!', '|', '$', '(', ')', ' '] as $escape__value) {
+                $password = str_replace($escape__value, '\\' . $escape__value, $password);
             }
             if (isset($ssh) && $ssh !== null && $ssh != '') {
                 // this is currently disabled (try out on other shells)
@@ -61,22 +61,19 @@ class syncdb
     public static function cleanUp()
     {
         foreach (glob('{,.}*', GLOB_BRACE) as $file) {
-            if (is_file($file) && !in_array($file, ['syncdb', 'syncdb.php', 'syncdb.bat'])) {                
+            if (is_file($file) && !in_array($file, ['syncdb', 'syncdb.php', 'syncdb.bat'])) {
                 $filename = substr($file, 0, strpos($file, '.'));
                 $filename = substr($file, 0, 13);
                 // other files (log file)
-                if( !is_numeric($filename) )
-                {
+                if (!is_numeric($filename)) {
                     @unlink($file);
                 }
                 // current session files
-                else if( $filename == self::$session_id )
-                {
+                elseif ($filename == self::$session_id) {
                     @unlink($file);
                 }
                 // abandoned, old files (if this file is older than 10 minutes)
-                else if( intval(self::$session_id) - intval($filename) > (60*10*1000) )
-                {
+                elseif (intval(self::$session_id) - intval($filename) > 60 * 10 * 1000) {
                     @unlink($file);
                 }
             }
@@ -107,7 +104,7 @@ class syncdb
 
         echo '- PROFILE: ' . $profile . PHP_EOL;
 
-        self::$session_id = intval(microtime(true)*1000); // this is important for cleaning up
+        self::$session_id = intval(microtime(true) * 1000); // this is important for cleaning up
 
         $tmp_filename = self::$session_id . '.sql';
 
@@ -141,12 +138,21 @@ class syncdb
                 $config->source->username .
                 ' -p' .
                 self::escapePassword($config->source->password, @$config->source->ssh) .
-                ' --skip-add-locks --skip-comments --extended-insert=false --disable-keys=false --quick ' .
+                ' --skip-add-locks --skip-comments --extended-insert=false --disable-keys=false --quick --default-character-set=utf8mb4 ' .
                 $config->source->database .
                 '';
 
-            if (isset($config->source->ssh) && $config->source->ssh !== false && isset($config->source->ssh->type) && $config->source->ssh->type == 'fast') {
-                $command .= ' > ' . (isset($config->source->ssh->tmp_dir) ? $config->source->ssh->tmp_dir : '/tmp/') . $tmp_filename . "\"";
+            if (
+                isset($config->source->ssh) &&
+                $config->source->ssh !== false &&
+                isset($config->source->ssh->type) &&
+                $config->source->ssh->type == 'fast'
+            ) {
+                $command .=
+                    ' > ' .
+                    (isset($config->source->ssh->tmp_dir) ? $config->source->ssh->tmp_dir : '/tmp/') .
+                    $tmp_filename .
+                    "\"";
             } else {
                 if (isset($config->source->ssh) && $config->source->ssh !== false) {
                     $command .= "\"";
@@ -159,8 +165,17 @@ class syncdb
 
             // fetch
 
-            if (isset($config->source->ssh) && $config->source->ssh !== false && isset($config->source->ssh->type) && $config->source->ssh->type == 'fast') {
-                if (isset($config->source->ssh) && isset($config->source->ssh->zip) && $config->source->ssh->zip === true) {
+            if (
+                isset($config->source->ssh) &&
+                $config->source->ssh !== false &&
+                isset($config->source->ssh->type) &&
+                $config->source->ssh->type == 'fast'
+            ) {
+                if (
+                    isset($config->source->ssh) &&
+                    isset($config->source->ssh->zip) &&
+                    $config->source->ssh->zip === true
+                ) {
                     $command =
                         'ssh -o StrictHostKeyChecking=no ' .
                         (isset($config->source->ssh->port) ? " -p \"" . $config->source->ssh->port . "\"" : '') .
@@ -285,8 +300,16 @@ class syncdb
             // mac sed has a slightly different syntax than unix sed (so inplace editing is a little bit tricky)
             $time_tmp = microtime(true);
             echo '--- DOING OPTIMIZATIONS...';
-            shell_exec("sed -i".(self::getOs()==='mac'?" ''":"")." -e 's/CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci/CHARSET=utf8 COLLATE=utf8_general_ci/g' -e 's/COLLATE utf8mb4_unicode_520_ci/COLLATE utf8_general_ci/g' -e '1s;^;\;SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, AUTOCOMMIT = 0\;SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS = 0\;SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS = 0\;;' -e '$ a".(self::getOs()==='mac'?"\'$'\\n''":"")." \;SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS\;SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS\;SET AUTOCOMMIT = @OLD_AUTOCOMMIT\;COMMIT\;' ".$tmp_filename."");
-            echo ' ('.number_format(microtime(true)-$time_tmp,2). 's)';
+            shell_exec(
+                'sed -i' .
+                    (self::getOs() === 'mac' ? " ''" : '') .
+                    " -e 's/CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci/CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci/g' -e 's/COLLATE utf8mb4_unicode_520_ci/COLLATE utf8mb4_unicode_ci/g' -e '1s;^;\;SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, AUTOCOMMIT = 0\;SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS = 0\;SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS = 0\;;' -e '$ a" .
+                    (self::getOs() === 'mac' ? "\'$'\\n''" : '') .
+                    " \;SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS\;SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS\;SET AUTOCOMMIT = @OLD_AUTOCOMMIT\;COMMIT\;' " .
+                    $tmp_filename .
+                    ''
+            );
+            echo ' (' . number_format(microtime(true) - $time_tmp, 2) . 's)';
             echo PHP_EOL;
 
             // search / replace
@@ -294,7 +317,7 @@ class syncdb
                 $time_tmp = microtime(true);
                 echo '--- SEARCH/REPLACE...';
                 magicreplace::run($tmp_filename, $tmp_filename, $config->replace);
-                echo ' ('.number_format(microtime(true)-$time_tmp,2). 's)';
+                echo ' (' . number_format(microtime(true) - $time_tmp, 2) . 's)';
                 echo PHP_EOL;
             }
 
@@ -388,7 +411,7 @@ class syncdb
                 self::escapePassword($config->target->password, @$config->target->ssh) .
                 ' ' .
                 $config->target->database .
-                ' --default-character-set=utf8';
+                ' --default-character-set=utf8mb4';
             if (isset($config->target->ssh) && $config->target->ssh !== false) {
                 $command .= "\"";
             }
@@ -396,7 +419,7 @@ class syncdb
 
             self::executeCommand($command, '--- RESTORING DATABASE...');
 
-            echo '- FINISHED ('.number_format(microtime(true)-$time,2). 's)' . PHP_EOL;
+            echo '- FINISHED (' . number_format(microtime(true) - $time, 2) . 's)' . PHP_EOL;
         }
 
         if ($config->engine == 'pgsql') {
@@ -433,7 +456,7 @@ class syncdb
 
         shell_exec($command);
 
-        echo ' ('.number_format(microtime(true)-$time,2). 's)';
+        echo ' (' . number_format(microtime(true) - $time, 2) . 's)';
         echo PHP_EOL;
 
         if (self::logHasError()) {
@@ -458,14 +481,22 @@ class syncdb
             return false;
         }
         $log = file_get_contents('log.txt');
-        if ((stripos($log, 'error') !== false && stripos($log, 'GTID_PURGED') === false) || stripos($log, 'not found') !== false) {
+        if (
+            (stripos($log, 'error') !== false && stripos($log, 'GTID_PURGED') === false) ||
+            stripos($log, 'not found') !== false
+        ) {
             return true;
         }
     }
 }
 
 // usage from command line
-if (!isset($argv) || empty($argv) || !isset($argv[1]) || !file_exists(syncdb::getBasepath() . '/profiles/' . $argv[1] . '.json')) {
+if (
+    !isset($argv) ||
+    empty($argv) ||
+    !isset($argv[1]) ||
+    !file_exists(syncdb::getBasepath() . '/profiles/' . $argv[1] . '.json')
+) {
     die('missing profile' . PHP_EOL);
 }
 syncdb::sync($argv[1]);
