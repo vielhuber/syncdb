@@ -398,6 +398,10 @@ class syncdb
                     $config->target->ssh->host .
                     " \"";
             }
+            $progress = (self::getOs() === 'linux' && (!isset($config->target->ssh) || $config->target->ssh === false));
+            if( $progress === true ) {
+                $command .= "pv \"" . $tmp_filename . "\" | ";
+            }
             $command .=
                 "\"" .
                 (isset($config->target->cmd) ? $config->target->cmd : 'mysql') .
@@ -415,7 +419,9 @@ class syncdb
             if (isset($config->target->ssh) && $config->target->ssh !== false) {
                 $command .= "\"";
             }
-            $command .= " < \"" . $tmp_filename . "\"";
+            if( $progress === false ) {
+                $command .= " < \"" . $tmp_filename . "\"";
+            }
 
             self::executeCommand($command, '--- RESTORING DATABASE...');
 
