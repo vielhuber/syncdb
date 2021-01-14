@@ -14,6 +14,7 @@ syncdb syncs databases between two servers.
 * Works on Linux, Mac and Windows (with Cygwin or WSL)
 * Supports parallel execution of multiple syncs
 * Uses optimization techniques for a faster restore
+* Shows live restore progress
 
 ## Requirements
 
@@ -24,7 +25,7 @@ brew install coreutils
 ```
 
 #### Windows
-Install all basic packages from [Cygwin](https://cygwin.com/install.html).
+Install [WSL2](https://docs.microsoft.com/de-de/windows/wsl/install-win10) or all basic packages from [Cygwin](https://cygwin.com/install.html).
 
 ## Installation
 
