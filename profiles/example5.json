@@ -1,32 +1,32 @@
 {
-	"engine": "mysql",
-	"source": {
-		"host": "remote.server.1",
-		"port": "3306",
-		"database": "EXAMPLE",
-		"username": "EXAMPLE",
-		"password": "EXAMPLE",
-		"cmd": "mysqldump --ignore-table=dbname.tblname --routines",
-		"ssh": {			
-			"host": "EXAMPLE",
-			"username": "EXAMPLE",
-			"key": "C:\\Users\\David\\.ssh\\id_rsa"
-		}
-	},
-	"target": {
-		"host": "remote.server.2",
-		"port": "3306",
-		"database": "EXAMPLE",
-		"username": "EXAMPLE",
-		"password": "EXAMPLE",
-        "cmd": "mysql",
-        "ssh": {            
+    "engine": "mysql",
+    "source": {
+        "host": "remote.server.1",
+        "port": "3306",
+        "database": "EXAMPLE",
+        "username": "EXAMPLE",
+        "password": "EXAMPLE",
+        "cmd": "mysqldump --ignore-table=dbname.tblname --routines",
+        "ssh": {
             "host": "EXAMPLE",
             "username": "EXAMPLE",
             "key": "C:\\Users\\David\\.ssh\\id_rsa"
         }
-	},
-	"replace": {
-		"foo": "bar"
-	}
+    },
+    "target": {
+        "host": "remote.server.2",
+        "port": "3306",
+        "database": "EXAMPLE",
+        "username": "EXAMPLE",
+        "password": "EXAMPLE",
+        "cmd": "mysql --force",
+        "ssh": {
+            "host": "EXAMPLE",
+            "username": "EXAMPLE",
+            "key": "C:\\Users\\David\\.ssh\\id_rsa"
+        }
+    },
+    "replace": {
+        "foo": "bar"
+    }
 }

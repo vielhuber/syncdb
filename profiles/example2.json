@@ -1,28 +1,28 @@
 {
-	"engine": "mysql",
-	"source": {
-		"host": "127.0.0.1",
-		"port": "3307",
-		"database": "EXAMPLE",
-		"username": "EXAMPLE",
-		"password": "EXAMPLE",
-		"cmd": "mysqldump",
-		"ssh": {			
-			"host": "EXAMPLE",
-			"username": "EXAMPLE",
-			"key": "C:\\Users\\David\\.ssh\\id_rsa"
-		}
-	},
-	"target": {
-		"host": "localhost",
-		"port": "3306",
-		"database": "EXAMPLE",
-		"username": "EXAMPLE",
-		"password": "EXAMPLE",
-		"cmd": "C:\\MAMP\\bin\\mysql\\bin\\mysql.exe",
-		"ssh": false
-	},
-	"replace": {
+    "engine": "mysql",
+    "source": {
+        "host": "127.0.0.1",
+        "port": "3307",
+        "database": "EXAMPLE",
+        "username": "EXAMPLE",
+        "password": "EXAMPLE",
+        "cmd": "mysqldump",
+        "ssh": {
+            "host": "EXAMPLE",
+            "username": "EXAMPLE",
+            "key": "C:\\Users\\David\\.ssh\\id_rsa"
+        }
+    },
+    "target": {
+        "host": "localhost",
+        "port": "3306",
+        "database": "EXAMPLE",
+        "username": "EXAMPLE",
+        "password": "EXAMPLE",
+        "cmd": "C:\\MAMP\\bin\\mysql\\bin\\mysql.exe",
+        "ssh": false
+    },
+    "replace": {
         "http://www.foo.com": "https://www.bar.local",
         "https://www.foo.com": "https://www.bar.local",
         "http://foo.com": "https://www.bar.local",
@@ -31,5 +31,5 @@
         "foo.com": "bar.local",
         "wpFastestCache.php": "wpFastestCache.OFF",
         "wpFastestCachePremium.php": "wpFastestCachePremium.OFF"
-	}
+    }
 }
