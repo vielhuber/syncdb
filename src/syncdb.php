@@ -44,6 +44,16 @@ class syncdb
         return $password;
     }
 
+    public static function escapeCmd($cmd) {
+        if( strpos($cmd, '--') === false ) {
+            $cmd = "\"".$cmd."\"";
+        }
+        else {
+            $cmd = "\"".trim(substr($cmd, 0, strpos($cmd, '--')))."\" ".trim(substr($cmd, strpos($cmd, '--')));
+        }
+        return $cmd;
+    }
+
     public static function getBasepath()
     {
         // if this is installed via composer, then we have to go up 4 levels
@@ -91,6 +101,7 @@ class syncdb
 
         $config = self::readConfig($profile);
 
+        /*
         if (self::getOs() !== 'windows') {
             if (!isset($config->source->ssh) || $config->source->ssh == false) {
                 unset($config->source->cmd);
@@ -101,6 +112,7 @@ class syncdb
             }
             unset($config->target->ssh->key);
         }
+        */
 
         echo '- PROFILE: ' . $profile . PHP_EOL;
 
@@ -128,9 +140,8 @@ class syncdb
             }
 
             $command .=
-                "\"" .
-                (isset($config->source->cmd) ? $config->source->cmd : 'mysqldump') .
-                "\" -h " .
+                (isset($config->source->cmd) ? self::escapeCmd($config->source->cmd) : "\"mysqldump\"") .
+                " -h " .
                 $config->source->host .
                 ' --port ' .
                 $config->source->port .
@@ -349,9 +360,8 @@ class syncdb
             }
 
             $command .=
-                "\"" .
-                (isset($config->target->cmd) ? $config->target->cmd : 'mysql') .
-                "\" -h " .
+                (isset($config->target->cmd) ? self::escapeCmd($config->target->cmd) : "\"mysql\"") .
+                " -h " .
                 $config->target->host .
                 ' --port ' .
                 $config->target->port .
@@ -403,9 +413,8 @@ class syncdb
                 $command .= "pv \"" . $tmp_filename . "\" | ";
             }
             $command .=
-                "\"" .
-                (isset($config->target->cmd) ? $config->target->cmd : 'mysql') .
-                "\" -h " .
+                (isset($config->target->cmd) ? self::escapeCmd($config->target->cmd) : "\"mysql\"") .
+                " -h " .
                 $config->target->host .
                 ' --port ' .
                 $config->target->port .
