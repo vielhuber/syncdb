@@ -128,6 +128,7 @@ class syncdb
             $command = '';
             if (isset($config->source->ssh) && $config->source->ssh !== false) {
                 $command .=
+                    (isset($config->source->ssh->password) ? 'sshpass -p '.self::escapePassword($config->source->ssh->password).' ' : '') .
                     'ssh -o StrictHostKeyChecking=no ' .
                     (isset($config->source->ssh->port) ? " -p \"" . $config->source->ssh->port . "\"" : '') .
                     ' ' .
@@ -188,6 +189,7 @@ class syncdb
                     $config->source->ssh->zip === true
                 ) {
                     $command =
+                        (isset($config->source->ssh->password) ? 'sshpass -p '.self::escapePassword($config->source->ssh->password).' ' : '') .
                         'ssh -o StrictHostKeyChecking=no ' .
                         (isset($config->source->ssh->port) ? " -p \"" . $config->source->ssh->port . "\"" : '') .
                         ' ' .
@@ -208,6 +210,7 @@ class syncdb
                         "\"";
                     self::executeCommand($command, '--- ZIPPING DATABASE...');
                     $command =
+                        (isset($config->source->ssh->password) ? 'sshpass -p '.self::escapePassword($config->source->ssh->password).' ' : '') .
                         'scp -o StrictHostKeyChecking=no -q -r ' .
                         (isset($config->source->ssh->port) ? " -P \"" . $config->source->ssh->port . "\"" : '') .
                         ' ' .
@@ -233,6 +236,7 @@ class syncdb
                     $command = (self::getOs() == 'windows' ? 'del' : 'rm') . ' -f ' . $tmp_filename . '.zip';
                     self::executeCommand($command, '--- DELETING LOCAL ZIP...');
                     $command =
+                        (isset($config->source->ssh->password) ? 'sshpass -p '.self::escapePassword($config->source->ssh->password).' ' : '') .
                         'ssh -o StrictHostKeyChecking=no ' .
                         (isset($config->source->ssh->port) ? " -p \"" . $config->source->ssh->port . "\"" : '') .
                         ' ' .
@@ -249,6 +253,7 @@ class syncdb
                         ".zip\"";
                     self::executeCommand($command, '--- DELETING REMOTE TMP ZIP...');
                     $command =
+                        (isset($config->source->ssh->password) ? 'sshpass -p '.self::escapePassword($config->source->ssh->password).' ' : '') .
                         'ssh -o StrictHostKeyChecking=no ' .
                         (isset($config->source->ssh->port) ? " -p \"" . $config->source->ssh->port . "\"" : '') .
                         ' ' .
@@ -266,6 +271,7 @@ class syncdb
                     self::executeCommand($command, '--- DELETING REMOTE TMP DATABASE...');
                 } else {
                     $command =
+                        (isset($config->source->ssh->password) ? 'sshpass -p '.self::escapePassword($config->source->ssh->password).' ' : '') .
                         'scp -o StrictHostKeyChecking=no -q -r ' .
                         (isset($config->source->ssh->port) ? " -P \"" . $config->source->ssh->port . "\"" : '') .
                         ' ' .
@@ -282,6 +288,7 @@ class syncdb
                         '';
                     self::executeCommand($command, '--- COPYING DATABASE TO SOURCE...');
                     $command =
+                        (isset($config->source->ssh->password) ? 'sshpass -p '.self::escapePassword($config->source->ssh->password).' ' : '') .
                         'ssh -o StrictHostKeyChecking=no ' .
                         (isset($config->source->ssh->port) ? " -p \"" . $config->source->ssh->port . "\"" : '') .
                         ' ' .
@@ -337,6 +344,7 @@ class syncdb
             $command = '';
             if (isset($config->target->ssh) && $config->target->ssh !== false) {
                 $command .=
+                    (isset($config->target->ssh->password) ? 'sshpass -p '.self::escapePassword($config->target->ssh->password).' ' : '') .
                     'ssh -o StrictHostKeyChecking=no ' .
                     (isset($config->target->ssh->port) ? " -p \"" . $config->target->ssh->port . "\"" : '') .
                     ' ' .
@@ -398,6 +406,7 @@ class syncdb
             $command = '';
             if (isset($config->target->ssh) && $config->target->ssh !== false) {
                 $command .=
+                    (isset($config->target->ssh->password) ? 'sshpass -p '.self::escapePassword($config->target->ssh->password).' ' : '') .
                     'ssh -o StrictHostKeyChecking=no ' .
                     (isset($config->target->ssh->port) ? " -p \"" . $config->target->ssh->port . "\"" : '') .
                     ' ' .

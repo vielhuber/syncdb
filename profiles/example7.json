@@ -1,0 +1,25 @@
+{
+    "engine": "mysql",
+    "source": {
+        "host": "127.0.0.1",
+        "port": "3307",
+        "database": "EXAMPLE",
+        "username": "EXAMPLE",
+        "password": "EXAMPLE",
+        "cmd": "mysqldump",
+        "ssh": {
+            "host": "EXAMPLE",
+            "username": "EXAMPLE",
+            "password": "EXAMPLE"
+        }
+    },
+    "target": {
+        "host": "localhost",
+        "port": "3306",
+        "database": "EXAMPLE",
+        "username": "EXAMPLE",
+        "password": "EXAMPLE",
+        "cmd": "mysql",
+        "ssh": false
+    }
+}

@@ -11,9 +11,10 @@ syncdb syncs databases between two servers.
 * Has also a fast mode where the sql file is zipped (you also can choose the compression level)
 * Does include a search/replace mechanism called [magicreplace](https://github.com/vielhuber/magicreplace)
 * (Remote) commands like mysqldump, mysql, zip, e.g. can be overwritten manually to fit any environment
-* Works on Linux, Mac and Windows (with Cygwin or WSL)
+* Works on Linux, Mac and Windows (with WSL)
 * Supports parallel execution of multiple syncs
 * Uses optimization techniques for a faster restore
+* Also supports ssh connections to servers without the support for public keys
 * Shows live restore progress
 
 ## Requirements

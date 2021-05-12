@@ -1,10 +1,5 @@
 /profiles/*.json
-!/profiles/example1.json
-!/profiles/example2.json
-!/profiles/example3.json
-!/profiles/example4.json
-!/profiles/example5.json
-!/profiles/example6.json
+!/profiles/example*.json
 /src/*.sql
 /src/*.zip
 /vendor/
