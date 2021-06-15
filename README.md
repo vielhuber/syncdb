@@ -98,14 +98,8 @@ You can find more examples in the profiles folder in this git repo.
 
 ## Privileges
 
-Since MySQL 5.7 and MySQL 8.0.21 access to the INFORMATION_SCHEMA.FILES table now requires the PROCESS privilege.
-
-Most providers don't have this option available.
-
-This results in the error message:
+Since MySQL 5.7 and MySQL 8.0.21 accessing the INFORMATION_SCHEMA.FILES table now requires the PROCESS privilege. Most providers don't have this option available. This results in the error message:
 
 `Error: 'Access denied; you need (at least one of) the PROCESS privilege(s) for this operation' when trying to dump tablespaces`
 
-Therefore `syncdb` automatically adds `--no-tablespaces` to your mysqldump-commands.
-
-You can turn off this behaviour by adding `"tablespaces": true` to you rconfiguration.
+`syncdb` automatically adds `--no-tablespaces` to your mysqldump-commands. You can turn off this behaviour by adding `"tablespaces": true` to your configuration.
