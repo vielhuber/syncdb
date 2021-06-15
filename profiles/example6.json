@@ -6,7 +6,8 @@
         "database": "EXAMPLE",
         "username": "EXAMPLE",
         "password": "EXAMPLE",
-        "cmd": "mysqldump --no-tablespaces",
+        "cmd": "mysqldump",
+        "tablespaces": true,
         "ssh": false
     },
     "target": {
