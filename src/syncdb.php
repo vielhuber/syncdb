@@ -343,12 +343,13 @@ class syncdb
             // mac sed has a slightly different syntax than unix sed (so inplace editing is a little bit tricky)
             $time_tmp = microtime(true);
             echo '--- DOING OPTIMIZATIONS...';
+            $sed_quote = self::getOs() === 'windows' ? '"' : "'";
             shell_exec(
                 'sed -i' .
                     (self::getOs() === 'mac' ? " ''" : '') .
-                    " -e 's/CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci/CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci/g' -e 's/COLLATE utf8mb4_unicode_520_ci/COLLATE utf8mb4_unicode_ci/g' -e '1s;^;\;SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, AUTOCOMMIT = 0\;SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS = 0\;SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS = 0\;;' -e '$ a" .
+                    " -e ".$sed_quote."s/CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci/CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci/g".$sed_quote." -e ".$sed_quote."s/COLLATE utf8mb4_unicode_520_ci/COLLATE utf8mb4_unicode_ci/g".$sed_quote." -e ".$sed_quote."1s;^;\;SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, AUTOCOMMIT = 0\;SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS = 0\;SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS = 0\;;".$sed_quote." -e ".$sed_quote."$ a" .
                     (self::getOs() === 'mac' ? "\'$'\\n''" : '') .
-                    " \;SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS\;SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS\;SET AUTOCOMMIT = @OLD_AUTOCOMMIT\;COMMIT\;' " .
+                    " \;SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS\;SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS\;SET AUTOCOMMIT = @OLD_AUTOCOMMIT\;COMMIT\;".$sed_quote." " .
                     $tmp_filename .
                     ''
             );
