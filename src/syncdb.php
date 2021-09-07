@@ -163,7 +163,7 @@ class syncdb
                 $config->source->username .
                 ' -p' .
                 self::escapePassword($config->source->password, @$config->source->ssh) .
-                ' --skip-add-locks --skip-comments --extended-insert=false --disable-keys=false --quick --default-character-set=utf8mb4 ' .
+                ' --column-statistics=0 --skip-add-locks --skip-comments --extended-insert=false --disable-keys=false --quick --default-character-set=utf8mb4 ' .
                 $config->source->database .
                 '';
 
