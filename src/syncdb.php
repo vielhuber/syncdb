@@ -152,6 +152,11 @@ class syncdb
                 $tablespaces = true;
             }
 
+            $add_disable_column_statistics = false;
+            if( strpos(shell_exec('mysqldump --version'), ' 5.') === false ) {
+                $add_disable_column_statistics = true;
+            }
+
             $command .=
                 (isset($config->source->cmd) ? self::escapeCmd($config->source->cmd) : "\"mysqldump\"") .
                 ($tablespaces === false ? ' --no-tablespaces ' : '') .
@@ -163,7 +168,8 @@ class syncdb
                 $config->source->username .
                 ' -p' .
                 self::escapePassword($config->source->password, @$config->source->ssh) .
-                ' --column-statistics=0 --skip-add-locks --skip-comments --extended-insert=false --disable-keys=false --quick --default-character-set=utf8mb4 ' .
+                ($add_disable_column_statistics === true ? ' --column-statistics=0 ' : '') . 
+                ' --skip-add-locks --skip-comments --extended-insert=false --disable-keys=false --quick --default-character-set=utf8mb4 ' .
                 $config->source->database .
                 '';
 
