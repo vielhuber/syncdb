@@ -153,7 +153,8 @@ class syncdb
             }
 
             $add_disable_column_statistics = false;
-            if( strpos(shell_exec('mysqldump --version'), ' 5.') === false ) {
+            $ver_output = shell_exec((isset($config->source->cmd) ? self::escapeCmd($config->source->cmd) : "\"mysqldump\"").' --version');
+            if( strpos($ver_output, ' 5.') === false ) {
                 $add_disable_column_statistics = true;
             }
 
