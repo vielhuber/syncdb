@@ -29,9 +29,17 @@ brew install coreutils
 
 #### Windows
 
-Install [WSL2](https://docs.microsoft.com/de-de/windows/wsl/install-win10) or all basic packages from [Cygwin](https://cygwin.com/install.html).
+Choose one of the two following options:
+
+- Install [WSL2](https://docs.microsoft.com/de-de/windows/wsl/install-win10)
+- Install the following packages from [Cygwin](https://cygwin.com/install.html):
+    - xxx
+    - xxx
+    - xxx
 
 ## Installation
+
+### Mac / Windows (WSL2) / Linux
 
 ```bash
 mkdir ~/.syncdb
@@ -42,12 +50,31 @@ chmod +x vendor/vielhuber/syncdb/src/syncdb
 
 Now add `~/.syncdb/vendor/vielhuber/syncdb/src/` to your path environment.
 
+### Windows (CMD)
+
+```bash
+mkdir "%USERPROFILE%/.syncdb"
+cd "%USERPROFILE%/.syncdb"
+composer require vielhuber/syncdb
+```
+
+Now add `C:\Users\xxx\.syncdb\vendor\vielhuber\syncdb\src\` to your path environment.
+
 ## Update
+
+### Mac / Windows (WSL2) / Linux
 
 ```bash
 cd ~/.syncdb
 composer update
 chmod +x vendor/vielhuber/syncdb/src/syncdb
+```
+
+### Windows (CMD)
+
+```bash
+cd "%USERPROFILE%/.syncdb"
+composer update
 ```
 
 ## Usage
