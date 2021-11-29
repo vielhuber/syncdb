@@ -31,11 +31,10 @@ brew install coreutils
 
 Choose one of the two following options:
 
-- Install [WSL2](https://docs.microsoft.com/de-de/windows/wsl/install-win10)
-- Install the following packages from [Cygwin](https://cygwin.com/install.html):
-    - xxx
-    - xxx
-    - xxx
+-   Install [WSL2](https://docs.microsoft.com/de-de/windows/wsl/install-win10)
+-   Install [Cygwin](https://cygwin.com/install.html):
+    -   Install all default packages
+    -   Add `C:\cygwin64\bin` to your environment PATH (high priority, but below php)
 
 ## Installation
 

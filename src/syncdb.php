@@ -153,8 +153,10 @@ class syncdb
             }
 
             $add_disable_column_statistics = false;
-            $ver_output = shell_exec((isset($config->source->cmd) ? self::escapeCmd($config->source->cmd) : "\"mysqldump\"").' --version');
-            if( strpos($ver_output, ' 5.') === false ) {
+            $ver_output = shell_exec(
+                (isset($config->source->cmd) ? self::escapeCmd($config->source->cmd) : "\"mysqldump\"") . ' --version'
+            );
+            if (strpos($ver_output, ' 5.') === false) {
                 $add_disable_column_statistics = true;
             }
 
@@ -169,7 +171,7 @@ class syncdb
                 $config->source->username .
                 ' -p' .
                 self::escapePassword($config->source->password, @$config->source->ssh) .
-                ($add_disable_column_statistics === true ? ' --column-statistics=0 ' : '') . 
+                ($add_disable_column_statistics === true ? ' --column-statistics=0 ' : '') .
                 ' --ssl-mode=DISABLED --skip-add-locks --skip-comments --extended-insert=false --disable-keys=false --quick --default-character-set=utf8mb4 ' .
                 $config->source->database .
                 '';
@@ -354,9 +356,25 @@ class syncdb
             shell_exec(
                 'sed -i' .
                     (self::getOs() === 'mac' ? " ''" : '') .
-                    " -e ".$sed_quote."s/CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci/CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci/g".$sed_quote." -e ".$sed_quote."s/COLLATE utf8mb4_unicode_520_ci/COLLATE utf8mb4_unicode_ci/g".$sed_quote." -e ".$sed_quote."1s;^;\;SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, AUTOCOMMIT = 0\;SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS = 0\;SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS = 0\;;".$sed_quote." -e ".$sed_quote."$ a" .
+                    ' -e ' .
+                    $sed_quote .
+                    's/CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci/CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci/g' .
+                    $sed_quote .
+                    ' -e ' .
+                    $sed_quote .
+                    's/COLLATE utf8mb4_unicode_520_ci/COLLATE utf8mb4_unicode_ci/g' .
+                    $sed_quote .
+                    ' -e ' .
+                    $sed_quote .
+                    '1s;^;\;SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, AUTOCOMMIT = 0\;SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS = 0\;SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS = 0\;;' .
+                    $sed_quote .
+                    ' -e ' .
+                    $sed_quote .
+                    '$ a' .
                     (self::getOs() === 'mac' ? "\'$'\\n''" : '') .
-                    " \;SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS\;SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS\;SET AUTOCOMMIT = @OLD_AUTOCOMMIT\;COMMIT\;".$sed_quote." " .
+                    ' \;SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS\;SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS\;SET AUTOCOMMIT = @OLD_AUTOCOMMIT\;COMMIT\;' .
+                    $sed_quote .
+                    ' ' .
                     $tmp_filename .
                     ''
             );
@@ -397,7 +415,11 @@ class syncdb
                 $escape = '';
             }
             if (self::getOs() === 'windows') {
-                $quote = "\\\"";
+                if (isset($config->target->ssh) && $config->target->ssh !== false) {
+                    $quote = "\\\"";
+                } else {
+                    $quote = "\"";
+                }
             } else {
                 $quote = "'";
             }
