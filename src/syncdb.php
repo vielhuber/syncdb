@@ -157,7 +157,7 @@ class syncdb
             $ver_output = shell_exec(
                 $command .
                 (isset($config->source->cmd) ? self::escapeCmd($config->source->cmd) : "\"mysqldump\"") . ' --version' .
-                ((isset($config->source->ssh) && $config->source->ssh !== false) ? "\"" . '')
+                ((isset($config->source->ssh) && $config->source->ssh !== false) ? "\"" : '')
             );
             if (strpos($ver_output, ' 5.') === false) {
                 $add_disable_column_statistics = true;
