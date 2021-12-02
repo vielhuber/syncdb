@@ -153,11 +153,18 @@ class syncdb
             }
 
             $add_disable_column_statistics = false;
+            $add_ssl_mode = false;
             $ver_output = shell_exec(
+                $command .
                 (isset($config->source->cmd) ? self::escapeCmd($config->source->cmd) : "\"mysqldump\"") . ' --version'
+                ((isset($config->source->ssh) && $config->source->ssh !== false) ? "\"" . '')
             );
             if (strpos($ver_output, ' 5.') === false) {
                 $add_disable_column_statistics = true;
+            }
+            // --ssl-mode is only available for mysqldump >= 5.7.11
+            if( !preg_match('/ [1-5]\.[1-6]/', $ver_output) ) {
+                $add_ssl_mode = true;
             }
 
             $command .=
@@ -172,7 +179,8 @@ class syncdb
                 ' -p' .
                 self::escapePassword($config->source->password, @$config->source->ssh) .
                 ($add_disable_column_statistics === true ? ' --column-statistics=0 ' : '') .
-                ' --ssl-mode=DISABLED --skip-add-locks --skip-comments --extended-insert=false --disable-keys=false --quick --default-character-set=utf8mb4 ' .
+                ($add_ssl_mode === true ? ' --ssl-mode=DISABLED ' : '') .
+                ' --skip-add-locks --skip-comments --extended-insert=false --disable-keys=false --quick --default-character-set=utf8mb4 ' .
                 $config->source->database .
                 '';
 
