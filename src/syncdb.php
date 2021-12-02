@@ -163,7 +163,7 @@ class syncdb
                 $add_disable_column_statistics = true;
             }
             // --ssl-mode is only available for mysqldump >= 5.7.11
-            if( !preg_match('/ [1-5]\.[1-6]/', $ver_output) ) {
+            if( !preg_match('/ [1-5]\.[1-6]/', $ver_output) && !preg_match('/CYGWIN/', $ver_output) ) {
                 $add_ssl_mode = true;
             }
 
