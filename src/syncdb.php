@@ -159,7 +159,7 @@ class syncdb
                 (isset($config->source->cmd) ? self::escapeCmd($config->source->cmd) : "\"mysqldump\"") . ' --version' .
                 ((isset($config->source->ssh) && $config->source->ssh !== false) ? "\"" : '')
             );
-            if (strpos($ver_output, ' 5.') === false) {
+            if (strpos($ver_output, ' 5.') === false && !preg_match('/CYGWIN/', $ver_output)) {
                 $add_disable_column_statistics = true;
             }
             // --ssl-mode is only available for mysqldump >= 5.7.11
