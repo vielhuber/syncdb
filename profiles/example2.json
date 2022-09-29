@@ -30,6 +30,7 @@
         "www.foo.com": "www.bar.local",
         "foo.com": "bar.local",
         "wpFastestCache.php": "wpFastestCache.OFF",
-        "wpFastestCachePremium.php": "wpFastestCachePremium.OFF"
+        "wpFastestCachePremium.php": "wpFastestCachePremium.OFF",
+        "w3-total-cache.php": "w3-total-cache.OFF"
     }
 }
