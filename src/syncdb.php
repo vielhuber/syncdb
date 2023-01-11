@@ -123,6 +123,39 @@ class syncdb
         self::cleanUp();
 
         if ($config->engine == 'mysql') {
+            $ver_output_source = shell_exec(
+                ((isset($config->source->ssh) && $config->source->ssh !== false) ? (                
+                    (isset($config->source->ssh->password) ? 'sshpass -p ' . self::escapePassword($config->source->ssh->password, true) . ' ' : '') .
+                    'ssh -o StrictHostKeyChecking=no ' .
+                    (isset($config->source->ssh->port) ? " -p \"" . $config->source->ssh->port . "\"" : '') .
+                    ' ' .
+                    (isset($config->source->ssh->key) ? " -i \"" . $config->source->ssh->key . "\"" : '') .
+                    " -l \"" .
+                    $config->source->ssh->username .
+                    "\" " .
+                    $config->source->ssh->host .
+                    " \""
+                ) : '') .
+                (isset($config->source->cmd) ? self::escapeCmd($config->source->cmd) : "\"mysqldump\"") . ' --version' .
+                ((isset($config->source->ssh) && $config->source->ssh !== false) ? "\"" : '')
+            );
+            $ver_output_target = shell_exec(
+                ((isset($config->target->ssh) && $config->target->ssh !== false) ? (                
+                    (isset($config->target->ssh->password) ? 'sshpass -p ' . self::escapePassword($config->target->ssh->password, true) . ' ' : '') .
+                    'ssh -o StrictHostKeyChecking=no ' .
+                    (isset($config->target->ssh->port) ? " -p \"" . $config->target->ssh->port . "\"" : '') .
+                    ' ' .
+                    (isset($config->target->ssh->key) ? " -i \"" . $config->target->ssh->key . "\"" : '') .
+                    " -l \"" .
+                    $config->target->ssh->username .
+                    "\" " .
+                    $config->target->ssh->host .
+                    " \""
+                ) : '') .
+                (isset($config->target->cmd) ? self::escapeCmd($config->target->cmd) : "\"mysql\"") . ' --version' .
+                ((isset($config->target->ssh) && $config->target->ssh !== false) ? "\"" : '')
+            );
+
             // dump
 
             $command = '';
@@ -154,23 +187,19 @@ class syncdb
 
             $add_disable_column_statistics = false;
             $add_ssl_mode = false;
-            $ver_output = shell_exec(
-                $command .
-                (isset($config->source->cmd) ? self::escapeCmd($config->source->cmd) : "\"mysqldump\"") . ' --version' .
-                ((isset($config->source->ssh) && $config->source->ssh !== false) ? "\"" : '')
-            );
+
             if (
-                strpos($ver_output, ' 5.') === false &&
-                !preg_match('/CYGWIN/', $ver_output) &&
-                strpos($ver_output, 'MariaDB') === false
+                strpos($ver_output_source, ' 5.') === false &&
+                !preg_match('/CYGWIN/', $ver_output_source) &&
+                strpos($ver_output_source, 'MariaDB') === false
             ) {
                 $add_disable_column_statistics = true;
             }
             // --ssl-mode is only available for mysqldump >= 5.7.11
             if(
-                !preg_match('/ [1-5]\.[1-6]/', $ver_output) &&
-                !preg_match('/CYGWIN/', $ver_output) &&
-                strpos($ver_output, 'MariaDB') === false
+                !preg_match('/ [1-5]\.[1-6]/', $ver_output_source) &&
+                !preg_match('/CYGWIN/', $ver_output_source) &&
+                strpos($ver_output_source, 'MariaDB') === false
             ) {
                 $add_ssl_mode = true;
             }
@@ -394,6 +423,33 @@ class syncdb
                     $tmp_filename .
                     ''
             );
+            // handle error "Variable 'sql_mode' can't be set to the value of 'NO_AUTO_CREATE_USER' Operation failed with exitcode 1"
+            // https://stackoverflow.com/questions/50336378/variable-sql-mode-cant-be-set-to-the-value-of-no-auto-create-user
+            if(
+                !preg_match('/ [1-7]\.[0-9]/', $ver_output_target) &&
+                !preg_match('/CYGWIN/', $ver_output_target) &&
+                strpos($ver_output_target, 'MariaDB') === false
+            ) {
+                shell_exec(
+                    'sed -i' .
+                        (self::getOs() === 'mac' ? " ''" : '') .
+                        ' -e ' .
+                        $sed_quote .
+                        's/,NO_AUTO_CREATE_USER//g' .
+                        $sed_quote .
+                        ' -e ' .
+                        $sed_quote .
+                        's/NO_AUTO_CREATE_USER,//g' .
+                        $sed_quote .
+                        ' -e ' .
+                        $sed_quote .
+                        's/NO_AUTO_CREATE_USER//g' .
+                        $sed_quote .
+                        ' ' .
+                        $tmp_filename .
+                        ''
+                );
+            }
             echo ' (' . number_format(microtime(true) - $time_tmp, 2) . 's)';
             echo PHP_EOL;
 
