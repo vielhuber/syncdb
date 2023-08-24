@@ -33,7 +33,7 @@ Choose one of the two following options:
 
 -   Install [WSL2](https://docs.microsoft.com/de-de/windows/wsl/install-win10)
 -   Install [Cygwin](https://cygwin.com/install.html):
-    -   Install all default packages
+    -   Install all default packages + `unzip`
     -   Add `C:\cygwin64\bin` to your environment PATH (high priority, but below php)
 
 ## Installation
