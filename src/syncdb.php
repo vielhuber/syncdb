@@ -654,4 +654,5 @@ if (
 ) {
     die('missing profile' . PHP_EOL);
 }
+ini_set('memory_limit', '3000M');
 syncdb::sync($argv[1]);
