@@ -28,5 +28,10 @@
     },
     "replace": {
         "foo": "bar"
-    }
+    },
+    "ignore_table_data": [
+        "table1",
+        "table2",
+        "table3"
+    ]
 }

@@ -122,6 +122,18 @@ nano example.json
 
 You can find more examples in the profiles folder in this git repo.
 
+## Excluding table data
+
+Sometimes it is useful to exclude certain table data (e.g. `logs`, `cache`, ...), while preserving the structure.
+Database engines don't provide a good way to do this.
+Therefore you can use the `ignore_table_data`-directive in your `json`-config:
+
+```json
+{
+    "ignore_table_data": ["table1", "table2", "table3"]
+}
+```
+
 ## Privileges
 
 Since MySQL 5.7 and MySQL 8.0.21 accessing the INFORMATION_SCHEMA.FILES table now requires the PROCESS privilege. Most providers don't have this option available. This results in the error message:

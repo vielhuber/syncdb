@@ -70,6 +70,9 @@ class syncdb
 
     public static function cleanUp()
     {
+        if (self::$debug === true) {
+            return;
+        }
         foreach (glob('{,.}*', GLOB_BRACE) as $file) {
             if (is_file($file) && !in_array($file, ['syncdb', 'syncdb.php', 'syncdb.bat'])) {
                 $filename = substr($file, 0, strpos($file, '.'));
@@ -124,36 +127,42 @@ class syncdb
 
         if ($config->engine == 'mysql') {
             $ver_output_source = shell_exec(
-                ((isset($config->source->ssh) && $config->source->ssh !== false) ? (                
-                    (isset($config->source->ssh->password) ? 'sshpass -p ' . self::escapePassword($config->source->ssh->password, true) . ' ' : '') .
-                    'ssh -o StrictHostKeyChecking=no ' .
-                    (isset($config->source->ssh->port) ? " -p \"" . $config->source->ssh->port . "\"" : '') .
-                    ' ' .
-                    (isset($config->source->ssh->key) ? " -i \"" . $config->source->ssh->key . "\"" : '') .
-                    " -l \"" .
-                    $config->source->ssh->username .
-                    "\" " .
-                    $config->source->ssh->host .
-                    " \""
-                ) : '') .
-                (isset($config->source->cmd) ? self::escapeCmd($config->source->cmd) : "\"mysqldump\"") . ' --version' .
-                ((isset($config->source->ssh) && $config->source->ssh !== false) ? "\"" : '')
+                (isset($config->source->ssh) && $config->source->ssh !== false
+                    ? (isset($config->source->ssh->password)
+                            ? 'sshpass -p ' . self::escapePassword($config->source->ssh->password, true) . ' '
+                            : '') .
+                        'ssh -o StrictHostKeyChecking=no ' .
+                        (isset($config->source->ssh->port) ? " -p \"" . $config->source->ssh->port . "\"" : '') .
+                        ' ' .
+                        (isset($config->source->ssh->key) ? " -i \"" . $config->source->ssh->key . "\"" : '') .
+                        " -l \"" .
+                        $config->source->ssh->username .
+                        "\" " .
+                        $config->source->ssh->host .
+                        " \""
+                    : '') .
+                    (isset($config->source->cmd) ? self::escapeCmd($config->source->cmd) : "\"mysqldump\"") .
+                    ' --version' .
+                    (isset($config->source->ssh) && $config->source->ssh !== false ? "\"" : '')
             );
             $ver_output_target = shell_exec(
-                ((isset($config->target->ssh) && $config->target->ssh !== false) ? (                
-                    (isset($config->target->ssh->password) ? 'sshpass -p ' . self::escapePassword($config->target->ssh->password, true) . ' ' : '') .
-                    'ssh -o StrictHostKeyChecking=no ' .
-                    (isset($config->target->ssh->port) ? " -p \"" . $config->target->ssh->port . "\"" : '') .
-                    ' ' .
-                    (isset($config->target->ssh->key) ? " -i \"" . $config->target->ssh->key . "\"" : '') .
-                    " -l \"" .
-                    $config->target->ssh->username .
-                    "\" " .
-                    $config->target->ssh->host .
-                    " \""
-                ) : '') .
-                (isset($config->target->cmd) ? self::escapeCmd($config->target->cmd) : "\"mysql\"") . ' --version' .
-                ((isset($config->target->ssh) && $config->target->ssh !== false) ? "\"" : '')
+                (isset($config->target->ssh) && $config->target->ssh !== false
+                    ? (isset($config->target->ssh->password)
+                            ? 'sshpass -p ' . self::escapePassword($config->target->ssh->password, true) . ' '
+                            : '') .
+                        'ssh -o StrictHostKeyChecking=no ' .
+                        (isset($config->target->ssh->port) ? " -p \"" . $config->target->ssh->port . "\"" : '') .
+                        ' ' .
+                        (isset($config->target->ssh->key) ? " -i \"" . $config->target->ssh->key . "\"" : '') .
+                        " -l \"" .
+                        $config->target->ssh->username .
+                        "\" " .
+                        $config->target->ssh->host .
+                        " \""
+                    : '') .
+                    (isset($config->target->cmd) ? self::escapeCmd($config->target->cmd) : "\"mysql\"") .
+                    ' --version' .
+                    (isset($config->target->ssh) && $config->target->ssh !== false ? "\"" : '')
             );
 
             // dump
@@ -196,7 +205,7 @@ class syncdb
                 $add_disable_column_statistics = true;
             }
             // --ssl-mode is only available for mysqldump >= 5.7.11
-            if(
+            if (
                 !preg_match('/ [1-5]\.[1-6]/', $ver_output_source) &&
                 !preg_match('/CYGWIN/', $ver_output_source) &&
                 strpos($ver_output_source, 'MariaDB') === false
@@ -240,7 +249,35 @@ class syncdb
                 $command .= " > \"" . $tmp_filename . "\"";
             }
 
-            self::executeCommand($command, '--- DUMPING DATABASE...');
+            if (
+                isset($config->ignore_table_data) &&
+                is_array($config->ignore_table_data) &&
+                !empty($config->ignore_table_data)
+            ) {
+
+                self::executeCommand(str_replace('--quick', '--quick --no-data --skip-triggers', $command), '--- DUMPING DATABASE (SCHEMAS)...');
+
+                self::executeCommand(str_replace(
+                    ' > ',
+                    ' >> ',
+                    str_replace(
+                        '--quick',
+                        '--quick --no-create-info ' .
+                            implode(' ',array_map(function ($ignore_table_data__value) use ($config) {
+                                return '--ignore-table="' .
+                                    $config->source->database .
+                                    '.' .
+                                    $ignore_table_data__value .
+                                    '"';
+                            }, $config->ignore_table_data)),
+                        $command
+                    )
+                ), '--- DUMPING DATABASE (DATA)...');
+            }
+
+            else {
+                self::executeCommand($command, '--- DUMPING DATABASE...');
+            }
 
             // fetch
 
@@ -425,7 +462,7 @@ class syncdb
             );
             // handle error "Variable 'sql_mode' can't be set to the value of 'NO_AUTO_CREATE_USER' Operation failed with exitcode 1"
             // https://stackoverflow.com/questions/50336378/variable-sql-mode-cant-be-set-to-the-value-of-no-auto-create-user
-            if(
+            if (
                 !preg_match('/ [1-7]\.[0-9]/', $ver_output_target) &&
                 !preg_match('/CYGWIN/', $ver_output_target) &&
                 strpos($ver_output_target, 'MariaDB') === false
