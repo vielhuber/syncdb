@@ -4,18 +4,18 @@ syncdb syncs databases between two servers.
 
 ## Features
 
--   Most common use case: Sync your production database to your local environment
--   You also can sync between any servers, even from remote to remote (without local)
--   Works with direct database connections or via ssh tunnels
--   Currently supports mysql, postgresql support will be added soon
--   Has also a fast mode where the sql file is zipped (you also can choose the compression level)
--   Does include a search/replace mechanism called [magicreplace](https://github.com/vielhuber/magicreplace)
--   (Remote) commands like mysqldump, mysql, zip, e.g. can be overwritten manually to fit any environment
--   Works on Linux, Mac and Windows (with WSL)
--   Supports parallel execution of multiple syncs
--   Uses optimization techniques for a faster restore
--   Also supports ssh connections to servers without the support for public keys
--   Shows live restore progress
+- Most common use case: Sync your production database to your local environment
+- You also can sync between any servers, even from remote to remote (without local)
+- Works with direct database connections or via ssh tunnels
+- Currently supports mysql, postgresql support will be added soon
+- Has also a fast mode where the sql file is zipped (you also can choose the compression level)
+- Does include a search/replace mechanism called [magicreplace](https://github.com/vielhuber/magicreplace)
+- (Remote) commands like mysqldump, mysql, zip, e.g. can be overwritten manually to fit any environment
+- Works on Linux, Mac and Windows (with WSL)
+- Supports parallel execution of multiple syncs
+- Uses optimization techniques for a faster restore
+- Also supports ssh connections to servers without the support for public keys
+- Shows live restore progress
 
 ## Requirements
 
@@ -31,10 +31,10 @@ brew install coreutils
 
 Choose one of the two following options:
 
--   Install [WSL2](https://docs.microsoft.com/de-de/windows/wsl/install-win10)
--   Install [Cygwin](https://cygwin.com/install.html):
-    -   Install all default packages + `unzip`
-    -   Add `C:\cygwin64\bin` to your environment PATH (high priority, but below php)
+- Install [WSL2](https://docs.microsoft.com/de-de/windows/wsl/install-win10)
+- Install [Cygwin](https://cygwin.com/install.html):
+    - Install all default packages + `unzip`
+    - Add `C:\cygwin64\bin` to your environment PATH (high priority, but below php)
 
 ## Installation
 
@@ -138,7 +138,10 @@ Therefore you can use the `ignore_table_data`-directive in your `json`-config:
 
 Since MySQL 5.7 and MySQL 8.0.21 accessing the INFORMATION_SCHEMA.FILES table now requires the PROCESS privilege. Most providers don't have this option available. This results in the error message:
 
-`Error: 'Access denied; you need (at least one of) the PROCESS\
-privilege(s) for this operation' when trying to dump tablespaces`
+````
+Error: 'Access denied; you need (at least one of) the PROCESS
+privilege(s) for this operation' when trying to dump tablespaces
+```
 
 `syncdb` automatically adds `--no-tablespaces` to your mysqldump-commands. You can turn off this behaviour by adding `"tablespaces": true` to your configuration.
+````
