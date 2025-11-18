@@ -226,7 +226,7 @@ class syncdb
                 self::escapePassword($config->source->password, @$config->source->ssh) .
                 ($add_disable_column_statistics === true ? ' --column-statistics=0 ' : '') .
                 ($add_ssl_mode === true ? ' --ssl-mode=DISABLED ' : '') .
-                ' --skip-add-locks --skip-comments --extended-insert=false --disable-keys=false --quick --default-character-set=utf8mb4 ' .
+                ' --skip-add-locks --skip-comments --extended-insert=true --disable-keys=false --quick --default-character-set=utf8mb4 ' .
                 $config->source->database .
                 '';
 
@@ -254,28 +254,34 @@ class syncdb
                 is_array($config->ignore_table_data) &&
                 !empty($config->ignore_table_data)
             ) {
+                self::executeCommand(
+                    str_replace('--quick', '--quick --no-data --skip-triggers', $command),
+                    '--- DUMPING DATABASE (SCHEMAS)...'
+                );
 
-                self::executeCommand(str_replace('--quick', '--quick --no-data --skip-triggers', $command), '--- DUMPING DATABASE (SCHEMAS)...');
-
-                self::executeCommand(str_replace(
-                    ' > ',
-                    ' >> ',
+                self::executeCommand(
                     str_replace(
-                        '--quick',
-                        '--quick --no-create-info ' .
-                            implode(' ',array_map(function ($ignore_table_data__value) use ($config) {
-                                return '--ignore-table="' .
-                                    $config->source->database .
-                                    '.' .
-                                    $ignore_table_data__value .
-                                    '"';
-                            }, $config->ignore_table_data)),
-                        $command
-                    )
-                ), '--- DUMPING DATABASE (DATA)...');
-            }
-
-            else {
+                        ' > ',
+                        ' >> ',
+                        str_replace(
+                            '--quick',
+                            '--quick --no-create-info ' .
+                                implode(
+                                    ' ',
+                                    array_map(function ($ignore_table_data__value) use ($config) {
+                                        return '--ignore-table="' .
+                                            $config->source->database .
+                                            '.' .
+                                            $ignore_table_data__value .
+                                            '"';
+                                    }, $config->ignore_table_data)
+                                ),
+                            $command
+                        )
+                    ),
+                    '--- DUMPING DATABASE (DATA)...'
+                );
+            } else {
                 self::executeCommand($command, '--- DUMPING DATABASE...');
             }
 
