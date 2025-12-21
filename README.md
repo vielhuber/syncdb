@@ -145,3 +145,21 @@ privilege(s) for this operation' when trying to dump tablespaces
 
 `syncdb` automatically adds `--no-tablespaces` to your `mysqldump`-commands.\
 You can turn off this behaviour by adding `"tablespaces": true` to your configuration.
+
+## Environment variables
+
+`syncdb` can set environment variables and works flawlessly with libraries like [ftpsh](https://github.com/vielhuber/ftpsh):
+
+```
+    ...
+    "cmd": "/var/www/ftpsh/ftpsh.sh mysqldump",
+    "env": {
+        "HOST": "your-server.com",
+        "PORT": "22",
+        "USERNAME": "your-username",
+        "PASSWORD": "your-password",
+        "REMOTE_PATH": "/",
+        "WEB_URL": "https://your-server.com"
+    },
+    ...
+```

@@ -46,10 +46,13 @@ class syncdb
 
     public static function escapeCmd($cmd)
     {
-        if (strpos($cmd, '--') === false) {
-            $cmd = "\"" . $cmd . "\"";
-        } else {
+        if (strpos($cmd, '--') !== false) {
             $cmd = "\"" . trim(substr($cmd, 0, strpos($cmd, '--'))) . "\" " . trim(substr($cmd, strpos($cmd, '--')));
+        }
+        if (strpos($cmd, '.sh') !== false && strpos($cmd, ' ') !== false) {
+            $cmd = "\"" . trim(substr($cmd, 0, strpos($cmd, ' '))) . "\" " . trim(substr($cmd, strpos($cmd, ' ')));
+        } else {
+            $cmd = "\"" . $cmd . "\"";
         }
         return $cmd;
     }
@@ -125,6 +128,12 @@ class syncdb
 
         self::cleanUp();
 
+        if(isset($config->source->env) && is_array($config->source->env)) {
+            foreach($config->source->env as $key => $value) {
+                putenv($key . '=' . $value);
+            }
+        }
+
         if ($config->engine == 'mysql') {
             $ver_output_source = shell_exec(
                 (isset($config->source->ssh) && $config->source->ssh !== false
@@ -145,6 +154,7 @@ class syncdb
                     ' --version' .
                     (isset($config->source->ssh) && $config->source->ssh !== false ? "\"" : '')
             );
+            if( $ver_output_source === null ) { $ver_output_source = ''; }
             $ver_output_target = shell_exec(
                 (isset($config->target->ssh) && $config->target->ssh !== false
                     ? (isset($config->target->ssh->password)
@@ -164,6 +174,7 @@ class syncdb
                     ' --version' .
                     (isset($config->target->ssh) && $config->target->ssh !== false ? "\"" : '')
             );
+            if( $ver_output_target === null ) { $ver_output_target = ''; }
 
             // dump
 
