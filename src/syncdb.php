@@ -48,8 +48,7 @@ class syncdb
     {
         if (strpos($cmd, '--') !== false) {
             $cmd = "\"" . trim(substr($cmd, 0, strpos($cmd, '--'))) . "\" " . trim(substr($cmd, strpos($cmd, '--')));
-        }
-        if (strpos($cmd, '.sh') !== false && strpos($cmd, ' ') !== false) {
+        } elseif (strpos($cmd, '.sh') !== false && strpos($cmd, ' ') !== false) {
             $cmd = "\"" . trim(substr($cmd, 0, strpos($cmd, ' '))) . "\" " . trim(substr($cmd, strpos($cmd, ' ')));
         } else {
             $cmd = "\"" . $cmd . "\"";
