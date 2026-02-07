@@ -145,7 +145,8 @@ class syncdb
                     : '') .
                     (isset($config->source->cmd) ? self::escapeCmd($config->source->cmd) : "\"mysqldump\"") .
                     ' --version' .
-                    (isset($config->source->ssh) && $config->source->ssh !== false ? "\"" : '')
+                    (isset($config->source->ssh) && $config->source->ssh !== false ? "\"" : '') .
+                    (self::getOs() === 'windows' ? ' 2> nul' : ' 2> /dev/null')
             );
             if ($ver_output_source === null) {
                 $ver_output_source = '';
@@ -167,7 +168,8 @@ class syncdb
                     : '') .
                     (isset($config->target->cmd) ? self::escapeCmd($config->target->cmd) : "\"mysql\"") .
                     ' --version' .
-                    (isset($config->target->ssh) && $config->target->ssh !== false ? "\"" : '')
+                    (isset($config->target->ssh) && $config->target->ssh !== false ? "\"" : '') .
+                    (self::getOs() === 'windows' ? ' 2> nul' : ' 2> /dev/null')
             );
             if ($ver_output_target === null) {
                 $ver_output_target = '';
