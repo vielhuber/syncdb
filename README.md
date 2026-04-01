@@ -1,3 +1,10 @@
+[![GitHub Tag](https://img.shields.io/github/v/tag/vielhuber/syncdb)](https://github.com/vielhuber/syncdb/tags)
+[![Code Style](https://img.shields.io/badge/code_style-psr--12-ff69b4.svg)](https://www.php-fig.org/psr/psr-12/)
+[![License](https://img.shields.io/github/license/vielhuber/syncdb)](https://github.com/vielhuber/syncdb/blob/main/LICENSE.md)
+[![Last Commit](https://img.shields.io/github/last-commit/vielhuber/syncdb)](https://github.com/vielhuber/syncdb/commits)
+[![PHP Version Support](https://img.shields.io/packagist/php-v/vielhuber/syncdb)](https://packagist.org/packages/vielhuber/syncdb)
+[![Packagist Downloads](https://img.shields.io/packagist/dt/vielhuber/syncdb)](https://packagist.org/packages/vielhuber/syncdb)
+
 # 🔥 syncdb 🔥
 
 syncdb syncs databases between two servers.
