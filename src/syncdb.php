@@ -389,10 +389,10 @@ final class syncdb
                         $config->source->ssh->host .
                         " \"" .
                         (isset($config->source->ssh->rm) ? $config->source->ssh->rm : 'rm -f') .
-                        ' ' .
+                        ' "' .
                         (isset($config->source->ssh->tmp_dir) ? $config->source->ssh->tmp_dir : '/tmp/') .
                         $tmp_filename .
-                        ".zip\"";
+                        ".zip\"\"";
                     self::executeCommand($command, '--- DELETING REMOTE TMP ZIP...');
                     $command =
                         (isset($config->source->ssh->password)
@@ -408,10 +408,10 @@ final class syncdb
                         $config->source->ssh->host .
                         " \"" .
                         (isset($config->source->ssh->rm) ? $config->source->ssh->rm : 'rm -f') .
-                        ' ' .
+                        ' "' .
                         (isset($config->source->ssh->tmp_dir) ? $config->source->ssh->tmp_dir : '/tmp/') .
                         $tmp_filename .
-                        "\"";
+                        "\"\"";
                     self::executeCommand($command, '--- DELETING REMOTE TMP DATABASE...');
                 } else {
                     $command =
@@ -447,10 +447,10 @@ final class syncdb
                         $config->source->ssh->host .
                         " \"" .
                         (isset($config->source->ssh->rm) ? $config->source->ssh->rm : 'rm -f') .
-                        ' ' .
+                        ' "' .
                         (isset($config->source->ssh->tmp_dir) ? $config->source->ssh->tmp_dir : '/tmp/') .
                         $tmp_filename .
-                        "\"";
+                        "\"\"";
                     self::executeCommand($command, '--- DELETING REMOTE TMP DATABASE...');
                 }
             }
@@ -748,7 +748,7 @@ final class syncdb
             if (isset($config->replace)) {
                 $time_tmp = microtime(true);
                 $tmp_sql_filename = self::$session_id . '.sqlite.sql';
-                $sqliteCmd = isset($config->cmd) ? self::escapeCmd((string) $config->cmd) : '"sqlite3"';
+                $sqliteCmd = isset($config->target->cmd) ? self::escapeCmd((string) $config->target->cmd) : '"sqlite3"';
 
                 self::executeCommand(
                     $sqliteCmd . ' ' . escapeshellarg($tmp_filename) . ' .dump > ' . escapeshellarg($tmp_sql_filename),
