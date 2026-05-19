@@ -1,0 +1,21 @@
+{
+    "engine": "sqlite",
+    "cmd": "sqlite3",
+    "source": {
+        "database": "/var/www/example-production/storage/database.sqlite",
+        "cmd": "sqlite3",
+        "ssh": {
+            "host": "EXAMPLE",
+            "username": "EXAMPLE",
+            "key": "~/.ssh/id_rsa"
+        }
+    },
+    "target": {
+        "database": "/var/www/example-local/storage/database.sqlite",
+        "ssh": false
+    },
+    "replace": {
+        "https://www.example.com": "http://www.example.local",
+        "www.example.com": "www.example.local"
+    }
+}

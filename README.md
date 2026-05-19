@@ -14,7 +14,7 @@ syncdb syncs databases between two servers.
 - Most common use case: Sync your production database to your local environment
 - You also can sync between any servers, even from remote to remote (without local)
 - Works with direct database connections or via ssh tunnels
-- Currently supports mysql, postgresql support will be added soon
+- Currently supports mysql and sqlite
 - Has also a fast mode where the sql file is zipped (you also can choose the compression level)
 - Does include a search/replace mechanism called [magicreplace](https://github.com/vielhuber/magicreplace)
 - (Remote) commands like mysqldump, mysql, zip, e.g. can be overwritten manually to fit any environment
@@ -25,6 +25,8 @@ syncdb syncs databases between two servers.
 - Shows live restore progress
 
 ## Requirements
+
+- PHP >= 8.1
 
 #### Mac
 
@@ -128,6 +130,43 @@ nano example.json
 ```
 
 You can find more examples in the profiles folder in this git repo.
+
+## SQLite
+
+SQLite databases are synchronized as files. Use the `database` key for the SQLite file path:
+
+```json
+{
+    "engine": "sqlite",
+    "cmd": "sqlite3",
+    "source": {
+        "database": "/var/www/example-production/storage/database.sqlite",
+        "cmd": "sqlite3",
+        "ssh": {
+            "host": "EXAMPLE",
+            "username": "EXAMPLE",
+            "key": "~/.ssh/id_rsa"
+        }
+    },
+    "target": {
+        "database": "/var/www/example-local/storage/database.sqlite",
+        "ssh": false
+    }
+}
+```
+
+For local SQLite sources, the PHP `sqlite3` extension is required. For search/replace, the local `sqlite3` command is required and can be customized with `cmd`. For remote SQLite sources, the remote host must provide the `sqlite3` command; it can be customized with `source.cmd`.
+
+Search/replace uses the same `magicreplace` mechanism as MySQL:
+
+```json
+{
+    "replace": {
+        "https://www.example.com": "http://www.example.local",
+        "www.example.com": "www.example.local"
+    }
+}
+```
 
 ## Excluding table data
 

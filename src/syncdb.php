@@ -1,14 +1,19 @@
 <?php
+declare(strict_types=1);
+
 namespace vielhuber\syncdb;
+
 require_once syncdb::getBasepath() . '/vendor/autoload.php';
+
 use vielhuber\magicreplace\magicreplace;
-class syncdb
+
+final class syncdb
 {
-    public static $debug = false;
+    public static bool $debug = false;
 
-    public static $session_id = null;
+    public static ?int $session_id = null;
 
-    public static function getOs()
+    public static function getOs(): string
     {
         if (stristr(PHP_OS, 'DAR')) {
             return 'mac';
@@ -22,7 +27,7 @@ class syncdb
         return 'unknown';
     }
 
-    public static function escapePassword($password, $ssh = null)
+    public static function escapePassword(string $password, mixed $ssh = null): string
     {
         if (self::getOs() === 'windows') {
             if (isset($ssh) && $ssh !== null && $ssh != '') {
@@ -31,8 +36,8 @@ class syncdb
                 $password = '"' . $password . '"';
             }
         } else {
-            foreach (['*', '?', '[', '<', '>', '&', ';', '!', '|', '$', '(', ')', ' '] as $escape__value) {
-                $password = str_replace($escape__value, '\\' . $escape__value, $password);
+            foreach (['*', '?', '[', '<', '>', '&', ';', '!', '|', '$', '(', ')', ' '] as $escapeCharacter) {
+                $password = str_replace($escapeCharacter, '\\' . $escapeCharacter, $password);
             }
             if (isset($ssh) && $ssh !== null && $ssh != '') {
                 // this is currently disabled (try out on other shells)
@@ -44,7 +49,7 @@ class syncdb
         return $password;
     }
 
-    public static function escapeCmd($cmd)
+    public static function escapeCmd(string $cmd): string
     {
         if (strpos($cmd, '--') !== false) {
             $cmd = "\"" . trim(substr($cmd, 0, strpos($cmd, '--'))) . "\" " . trim(substr($cmd, strpos($cmd, '--')));
@@ -56,21 +61,21 @@ class syncdb
         return $cmd;
     }
 
-    public static function getBasepath()
+    public static function getBasepath(): string
     {
         // if this is installed via composer, then we have to go up 4 levels
         if (file_exists(dirname(__DIR__, 4) . '/vendor/autoload.php')) {
             return dirname(__DIR__, 4);
         }
         // if otherwise the git repo is cloned, we go up 1 level
-        elseif (file_exists(dirname(__DIR__, 1) . '/vendor/autoload.php')) {
+        if (file_exists(dirname(__DIR__, 1) . '/vendor/autoload.php')) {
             return dirname(__DIR__, 1);
-        } else {
-            throw new \Exception('wrong path');
         }
+
+        throw new \RuntimeException('wrong path');
     }
 
-    public static function cleanUp()
+    public static function cleanUp(): void
     {
         if (self::$debug === true) {
             return;
@@ -81,26 +86,37 @@ class syncdb
                 $filename = substr($file, 0, 13);
                 // other files (log file)
                 if (!is_numeric($filename)) {
-                    @unlink($file);
+                    if (is_writable($file)) {
+                        unlink($file);
+                    }
                 }
                 // current session files
-                elseif ($filename == self::$session_id) {
-                    @unlink($file);
+                elseif ($filename === (string) self::$session_id) {
+                    if (is_writable($file)) {
+                        unlink($file);
+                    }
                 }
                 // abandoned, old files (if this file is older than 10 minutes)
                 elseif (intval(self::$session_id) - intval($filename) > 60 * 10 * 1000) {
-                    @unlink($file);
+                    if (is_writable($file)) {
+                        unlink($file);
+                    }
                 }
             }
         }
     }
 
-    public static function readConfig($profile)
+    public static function readConfig(string $profile): \stdClass
     {
-        return json_decode(file_get_contents(self::getBasepath() . '/profiles/' . $profile . '.json'));
+        return json_decode(
+            (string) file_get_contents(self::getBasepath() . '/profiles/' . $profile . '.json'),
+            false,
+            512,
+            JSON_THROW_ON_ERROR
+        );
     }
 
-    public static function sync($profile)
+    public static function sync(string $profile): void
     {
         $time = microtime(true);
 
@@ -123,15 +139,15 @@ class syncdb
 
         self::$session_id = intval(microtime(true) * 1000); // this is important for cleaning up
 
-        $tmp_filename = self::$session_id . '.sql';
+        $tmp_filename = self::$session_id . ($config->engine === 'sqlite' ? '.sqlite' : '.sql');
 
         self::cleanUp();
 
-        if ($config->engine == 'mysql') {
+        if ($config->engine === 'mysql') {
             $ver_output_source = shell_exec(
                 (isset($config->source->ssh) && $config->source->ssh !== false
                     ? (isset($config->source->ssh->password)
-                            ? 'sshpass -p ' . self::escapePassword($config->source->ssh->password, true) . ' '
+                            ? 'sshpass -p ' . self::escapePassword((string) $config->source->ssh->password, true) . ' '
                             : '') .
                         'ssh -o StrictHostKeyChecking=no ' .
                         (isset($config->source->ssh->port) ? " -p \"" . $config->source->ssh->port . "\"" : '') .
@@ -154,7 +170,7 @@ class syncdb
             $ver_output_target = shell_exec(
                 (isset($config->target->ssh) && $config->target->ssh !== false
                     ? (isset($config->target->ssh->password)
-                            ? 'sshpass -p ' . self::escapePassword($config->target->ssh->password, true) . ' '
+                            ? 'sshpass -p ' . self::escapePassword((string) $config->target->ssh->password, true) . ' '
                             : '') .
                         'ssh -o StrictHostKeyChecking=no ' .
                         (isset($config->target->ssh->port) ? " -p \"" . $config->target->ssh->port . "\"" : '') .
@@ -181,7 +197,7 @@ class syncdb
             if (isset($config->source->ssh) && $config->source->ssh !== false) {
                 $command .=
                     (isset($config->source->ssh->password)
-                        ? 'sshpass -p ' . self::escapePassword($config->source->ssh->password, true) . ' '
+                        ? 'sshpass -p ' . self::escapePassword((string) $config->source->ssh->password, true) . ' '
                         : '') .
                     'ssh -o StrictHostKeyChecking=no ' .
                     (isset($config->source->ssh->port) ? " -p \"" . $config->source->ssh->port . "\"" : '') .
@@ -233,7 +249,7 @@ class syncdb
                 ' -u ' .
                 $config->source->username .
                 ' -p' .
-                self::escapePassword($config->source->password, @$config->source->ssh) .
+                self::escapePassword((string) $config->source->password, $config->source->ssh ?? null) .
                 ($add_disable_column_statistics === true ? ' --column-statistics=0 ' : '') .
                 ($add_ssl_mode === true ? ' --ssl-mode=DISABLED ' : '') .
                 ' --skip-add-locks --skip-comments --extended-insert=true --disable-keys=false --quick --default-character-set=utf8mb4 ' .
@@ -310,7 +326,7 @@ class syncdb
                 ) {
                     $command =
                         (isset($config->source->ssh->password)
-                            ? 'sshpass -p ' . self::escapePassword($config->source->ssh->password, true) . ' '
+                            ? 'sshpass -p ' . self::escapePassword((string) $config->source->ssh->password, true) . ' '
                             : '') .
                         'ssh -o StrictHostKeyChecking=no ' .
                         (isset($config->source->ssh->port) ? " -p \"" . $config->source->ssh->port . "\"" : '') .
@@ -333,7 +349,7 @@ class syncdb
                     self::executeCommand($command, '--- ZIPPING DATABASE...');
                     $command =
                         (isset($config->source->ssh->password)
-                            ? 'sshpass -p ' . self::escapePassword($config->source->ssh->password, true) . ' '
+                            ? 'sshpass -p ' . self::escapePassword((string) $config->source->ssh->password, true) . ' '
                             : '') .
                         'scp -o StrictHostKeyChecking=no -q -r ' .
                         (isset($config->source->ssh->port) ? " -P \"" . $config->source->ssh->port . "\"" : '') .
@@ -357,11 +373,11 @@ class syncdb
                     }
                     $command = 'unzip -j -o ' . $tmp_filename . '.zip';
                     self::executeCommand($command, '--- UNZIPPING ZIP FILE...');
-                    $command = (self::getOs() == 'windows' ? 'del' : 'rm') . ' -f ' . $tmp_filename . '.zip';
+                    $command = (self::getOs() === 'windows' ? 'del' : 'rm') . ' -f ' . $tmp_filename . '.zip';
                     self::executeCommand($command, '--- DELETING LOCAL ZIP...');
                     $command =
                         (isset($config->source->ssh->password)
-                            ? 'sshpass -p ' . self::escapePassword($config->source->ssh->password, true) . ' '
+                            ? 'sshpass -p ' . self::escapePassword((string) $config->source->ssh->password, true) . ' '
                             : '') .
                         'ssh -o StrictHostKeyChecking=no ' .
                         (isset($config->source->ssh->port) ? " -p \"" . $config->source->ssh->port . "\"" : '') .
@@ -380,7 +396,7 @@ class syncdb
                     self::executeCommand($command, '--- DELETING REMOTE TMP ZIP...');
                     $command =
                         (isset($config->source->ssh->password)
-                            ? 'sshpass -p ' . self::escapePassword($config->source->ssh->password, true) . ' '
+                            ? 'sshpass -p ' . self::escapePassword((string) $config->source->ssh->password, true) . ' '
                             : '') .
                         'ssh -o StrictHostKeyChecking=no ' .
                         (isset($config->source->ssh->port) ? " -p \"" . $config->source->ssh->port . "\"" : '') .
@@ -400,7 +416,7 @@ class syncdb
                 } else {
                     $command =
                         (isset($config->source->ssh->password)
-                            ? 'sshpass -p ' . self::escapePassword($config->source->ssh->password, true) . ' '
+                            ? 'sshpass -p ' . self::escapePassword((string) $config->source->ssh->password, true) . ' '
                             : '') .
                         'scp -o StrictHostKeyChecking=no -q -r ' .
                         (isset($config->source->ssh->port) ? " -P \"" . $config->source->ssh->port . "\"" : '') .
@@ -419,7 +435,7 @@ class syncdb
                     self::executeCommand($command, '--- COPYING DATABASE TO SOURCE...');
                     $command =
                         (isset($config->source->ssh->password)
-                            ? 'sshpass -p ' . self::escapePassword($config->source->ssh->password, true) . ' '
+                            ? 'sshpass -p ' . self::escapePassword((string) $config->source->ssh->password, true) . ' '
                             : '') .
                         'ssh -o StrictHostKeyChecking=no ' .
                         (isset($config->source->ssh->port) ? " -p \"" . $config->source->ssh->port . "\"" : '') .
@@ -510,7 +526,7 @@ class syncdb
             if (isset($config->replace)) {
                 $time_tmp = microtime(true);
                 echo '--- SEARCH/REPLACE...';
-                magicreplace::run($tmp_filename, $tmp_filename, $config->replace);
+                magicreplace::run($tmp_filename, $tmp_filename, (array) $config->replace);
                 echo ' (' . number_format(microtime(true) - $time_tmp, 2) . 's)';
                 echo PHP_EOL;
             }
@@ -521,7 +537,7 @@ class syncdb
             if (isset($config->target->ssh) && $config->target->ssh !== false) {
                 $command .=
                     (isset($config->target->ssh->password)
-                        ? 'sshpass -p ' . self::escapePassword($config->target->ssh->password, true) . ' '
+                        ? 'sshpass -p ' . self::escapePassword((string) $config->target->ssh->password, true) . ' '
                         : '') .
                     'ssh -o StrictHostKeyChecking=no ' .
                     (isset($config->target->ssh->port) ? " -p \"" . $config->target->ssh->port . "\"" : '') .
@@ -558,7 +574,7 @@ class syncdb
                 ' -u ' .
                 $config->target->username .
                 ' -p' .
-                self::escapePassword($config->target->password, @$config->target->ssh) .
+                self::escapePassword((string) $config->target->password, $config->target->ssh ?? null) .
                 ' -e ' .
                 $quote .
                 'drop database if exists ' .
@@ -589,7 +605,7 @@ class syncdb
             if (isset($config->target->ssh) && $config->target->ssh !== false) {
                 $command .=
                     (isset($config->target->ssh->password)
-                        ? 'sshpass -p ' . self::escapePassword($config->target->ssh->password, true) . ' '
+                        ? 'sshpass -p ' . self::escapePassword((string) $config->target->ssh->password, true) . ' '
                         : '') .
                     'ssh -o StrictHostKeyChecking=no ' .
                     (isset($config->target->ssh->port) ? " -p \"" . $config->target->ssh->port . "\"" : '') .
@@ -614,7 +630,7 @@ class syncdb
                 ' -u ' .
                 $config->target->username .
                 ' -p' .
-                self::escapePassword($config->target->password, @$config->target->ssh) .
+                self::escapePassword((string) $config->target->password, $config->target->ssh ?? null) .
                 ' ' .
                 $config->target->database .
                 ' --default-character-set=utf8mb4';
@@ -630,14 +646,198 @@ class syncdb
             echo '- FINISHED (' . number_format(microtime(true) - $time, 2) . 's)' . PHP_EOL;
         }
 
-        if ($config->engine == 'pgsql') {
+        if ($config->engine === 'pgsql') {
             // TODO
+        }
+
+        if ($config->engine === 'sqlite') {
+            $sourceFile = (string) ($config->source->database ?? '');
+            $targetFile = (string) ($config->target->database ?? '');
+
+            if ($sourceFile === '' || $targetFile === '') {
+                echo '--- AN ERROR OCCURED!' . PHP_EOL;
+                self::cleanUp();
+                die();
+            }
+
+            if (isset($config->source->ssh) && $config->source->ssh !== false) {
+                $remoteTmpFile = rtrim((string) ($config->source->ssh->tmp_dir ?? '/tmp/'), '/') .
+                    '/' .
+                    basename($tmp_filename);
+                $sshCommand =
+                    (isset($config->source->ssh->password)
+                        ? 'sshpass -p ' . self::escapePassword((string) $config->source->ssh->password, true) . ' '
+                        : '') .
+                    'ssh -o StrictHostKeyChecking=no ' .
+                    (isset($config->source->ssh->port) ? ' -p ' . escapeshellarg((string) $config->source->ssh->port) : '') .
+                    ' ' .
+                    (isset($config->source->ssh->key) ? ' -i ' . escapeshellarg((string) $config->source->ssh->key) : '') .
+                    ' -l ' .
+                    escapeshellarg((string) $config->source->ssh->username) .
+                    ' ' .
+                    escapeshellarg((string) $config->source->ssh->host);
+                $sqliteBackupCommand = self::escapeCmd((string) ($config->source->cmd ?? 'sqlite3')) .
+                    ' ' .
+                    escapeshellarg($sourceFile) .
+                    ' ' .
+                    escapeshellarg('.backup ' . escapeshellarg($remoteTmpFile));
+
+                self::executeCommand(
+                    $sshCommand .
+                        ' ' .
+                        escapeshellarg(
+                            $sqliteBackupCommand .
+                                ' && cat ' .
+                                escapeshellarg($remoteTmpFile) .
+                                ' && rm -f ' .
+                                escapeshellarg($remoteTmpFile)
+                        ) .
+                        ' > ' .
+                        escapeshellarg($tmp_filename),
+                    '--- BACKING UP DATABASE...'
+                );
+            } else {
+                $time_tmp = microtime(true);
+                echo '--- BACKING UP DATABASE...';
+
+                if (!is_file($sourceFile) || !is_readable($sourceFile)) {
+                    echo PHP_EOL;
+                    echo '--- AN ERROR OCCURED!' . PHP_EOL;
+                    self::cleanUp();
+                    die();
+                }
+
+                if (!class_exists(\SQLite3::class)) {
+                    echo PHP_EOL;
+                    echo '--- SQLITE3 EXTENSION IS MISSING' . PHP_EOL;
+                    self::cleanUp();
+                    die();
+                }
+
+                if (file_exists($tmp_filename)) {
+                    unlink($tmp_filename);
+                }
+
+                try {
+                    $sourceDatabase = new \SQLite3($sourceFile, SQLITE3_OPEN_READONLY);
+                    $targetDatabase = new \SQLite3($tmp_filename);
+                    $backupSuccessful = $sourceDatabase->backup($targetDatabase);
+                    $sourceDatabase->close();
+                    $targetDatabase->close();
+                } catch (\SQLite3Exception) {
+                    $backupSuccessful = false;
+                }
+
+                if ($backupSuccessful !== true || !file_exists($tmp_filename) || filesize($tmp_filename) === 0) {
+                    echo PHP_EOL;
+                    echo '--- AN ERROR OCCURED!' . PHP_EOL;
+                    self::cleanUp();
+                    die();
+                }
+
+                echo ' (' . number_format(microtime(true) - $time_tmp, 2) . 's)';
+                echo PHP_EOL;
+            }
+
+            if (!file_exists($tmp_filename) || filesize($tmp_filename) === 0) {
+                echo '--- AN ERROR OCCURED!' . PHP_EOL;
+                self::cleanUp();
+                die();
+            }
+
+            if (isset($config->replace)) {
+                $time_tmp = microtime(true);
+                $tmp_sql_filename = self::$session_id . '.sqlite.sql';
+                $sqliteCmd = isset($config->cmd) ? self::escapeCmd((string) $config->cmd) : '"sqlite3"';
+
+                self::executeCommand(
+                    $sqliteCmd . ' ' . escapeshellarg($tmp_filename) . ' .dump > ' . escapeshellarg($tmp_sql_filename),
+                    '--- DUMPING SQLITE DATABASE...'
+                );
+
+                echo '--- SEARCH/REPLACE...';
+                magicreplace::run($tmp_sql_filename, $tmp_sql_filename, (array) $config->replace);
+                echo ' (' . number_format(microtime(true) - $time_tmp, 2) . 's)';
+                echo PHP_EOL;
+
+                unlink($tmp_filename);
+
+                self::executeCommand(
+                    $sqliteCmd . ' ' . escapeshellarg($tmp_filename) . ' < ' . escapeshellarg($tmp_sql_filename),
+                    '--- RESTORING SQLITE DATABASE...'
+                );
+            }
+
+            if (isset($config->target->ssh) && $config->target->ssh !== false) {
+                $remoteTmpFile = rtrim((string) ($config->target->ssh->tmp_dir ?? '/tmp/'), '/') .
+                    '/' .
+                    basename($tmp_filename);
+                $sshCommand =
+                    (isset($config->target->ssh->password)
+                        ? 'sshpass -p ' . self::escapePassword((string) $config->target->ssh->password, true) . ' '
+                        : '') .
+                    'ssh -o StrictHostKeyChecking=no ' .
+                    (isset($config->target->ssh->port) ? ' -p ' . escapeshellarg((string) $config->target->ssh->port) : '') .
+                    ' ' .
+                    (isset($config->target->ssh->key) ? ' -i ' . escapeshellarg((string) $config->target->ssh->key) : '') .
+                    ' -l ' .
+                    escapeshellarg((string) $config->target->ssh->username) .
+                    ' ' .
+                    escapeshellarg((string) $config->target->ssh->host);
+
+                self::executeCommand(
+                    'cat ' .
+                        escapeshellarg($tmp_filename) .
+                        ' | ' .
+                        $sshCommand .
+                        ' ' .
+                        escapeshellarg('cat > ' . escapeshellarg($remoteTmpFile)),
+                    '--- COPYING DATABASE TO TARGET...'
+                );
+
+                self::executeCommand(
+                    $sshCommand .
+                        ' ' .
+                        escapeshellarg(
+                            'rm -f ' .
+                                escapeshellarg($targetFile . '-wal') .
+                                ' ' .
+                                escapeshellarg($targetFile . '-shm') .
+                                ' && mv ' .
+                                escapeshellarg($remoteTmpFile) .
+                                ' ' .
+                                escapeshellarg($targetFile)
+                        ),
+                    '--- MOVING DATABASE INTO PLACE...'
+                );
+            } else {
+                $time_tmp = microtime(true);
+                echo '--- COPYING DATABASE TO TARGET...';
+
+                foreach ([$targetFile . '-wal', $targetFile . '-shm'] as $sidecarFile) {
+                    if (is_file($sidecarFile)) {
+                        unlink($sidecarFile);
+                    }
+                }
+
+                if (copy($tmp_filename, $targetFile) !== true || !file_exists($targetFile) || filesize($targetFile) === 0) {
+                    echo PHP_EOL;
+                    echo '--- AN ERROR OCCURED!' . PHP_EOL;
+                    self::cleanUp();
+                    die();
+                }
+
+                echo ' (' . number_format(microtime(true) - $time_tmp, 2) . 's)';
+                echo PHP_EOL;
+            }
+
+            echo '- FINISHED (' . number_format(microtime(true) - $time, 2) . 's)' . PHP_EOL;
         }
 
         self::cleanUp();
     }
 
-    public static function executeCommand($command, $message, $suppress_output = true)
+    public static function executeCommand(string $command, string $message, bool $suppress_output = true): void
     {
         $time = microtime(true);
 
@@ -662,12 +862,13 @@ class syncdb
             echo PHP_EOL;
         }
 
-        shell_exec($command);
+        $exitCode = 0;
+        exec($command, $output, $exitCode);
 
         echo ' (' . number_format(microtime(true) - $time, 2) . 's)';
         echo PHP_EOL;
 
-        if (self::logHasError()) {
+        if ($exitCode !== 0 || self::logHasError()) {
             echo '--- AN ERROR OCCURED!' . PHP_EOL;
             echo PHP_EOL;
             echo 'command:';
@@ -677,13 +878,13 @@ class syncdb
             echo PHP_EOL;
             echo 'output:';
             echo PHP_EOL;
-            echo file_get_contents('log.txt');
+            echo file_exists('log.txt') ? file_get_contents('log.txt') : '';
             self::cleanUp();
             die();
         }
     }
 
-    public static function logHasError()
+    public static function logHasError(): bool
     {
         if (!file_exists('log.txt')) {
             return false;
@@ -695,6 +896,8 @@ class syncdb
         ) {
             return true;
         }
+
+        return false;
     }
 }
 
