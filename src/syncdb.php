@@ -393,7 +393,7 @@ final class syncdb
                         (isset($config->source->ssh->tmp_dir) ? $config->source->ssh->tmp_dir : '/tmp/') .
                         $tmp_filename .
                         '.zip\\""';
-                    self::executeCommand($command, '--- DELETING REMOTE TMP ZIP...');
+                    self::executeCommand($command, '--- DELETING REMOTE TMP ZIP...', true, true);
                     $command =
                         (isset($config->source->ssh->password)
                             ? 'sshpass -p ' . self::escapePassword((string) $config->source->ssh->password, true) . ' '
@@ -412,7 +412,7 @@ final class syncdb
                         (isset($config->source->ssh->tmp_dir) ? $config->source->ssh->tmp_dir : '/tmp/') .
                         $tmp_filename .
                         '\\""';
-                    self::executeCommand($command, '--- DELETING REMOTE TMP DATABASE...');
+                    self::executeCommand($command, '--- DELETING REMOTE TMP DATABASE...', true, true);
                 } else {
                     $command =
                         (isset($config->source->ssh->password)
@@ -451,7 +451,7 @@ final class syncdb
                         (isset($config->source->ssh->tmp_dir) ? $config->source->ssh->tmp_dir : '/tmp/') .
                         $tmp_filename .
                         '\\""';
-                    self::executeCommand($command, '--- DELETING REMOTE TMP DATABASE...');
+                    self::executeCommand($command, '--- DELETING REMOTE TMP DATABASE...', true, true);
                 }
             }
 
@@ -837,7 +837,12 @@ final class syncdb
         self::cleanUp();
     }
 
-    public static function executeCommand(string $command, string $message, bool $suppress_output = true): void
+    public static function executeCommand(
+        string $command,
+        string $message,
+        bool $suppress_output = true,
+        bool $ignore_errors = false
+    ): void
     {
         $time = microtime(true);
 
@@ -867,6 +872,10 @@ final class syncdb
 
         echo ' (' . number_format(microtime(true) - $time, 2) . 's)';
         echo PHP_EOL;
+
+        if ($ignore_errors === true) {
+            return;
+        }
 
         if ($exitCode !== 0 || self::logHasError()) {
             echo '--- AN ERROR OCCURED!' . PHP_EOL;
