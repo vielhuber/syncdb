@@ -1,3 +1,17 @@
 #!/bin/bash
 cd "$(dirname "$0")"
-php syncdb.php "$@"
+PHP_BIN="${SYNCDB_PHP_BIN:-}"
+if [ -z "$PHP_BIN" ] && [ -f "../.phprc" ]; then
+    PHP_VERSION="$(tr -d '[:space:]' < "../.phprc")"
+    if [ -n "$PHP_VERSION" ]; then
+        if [[ "$PHP_VERSION" == php* || "$PHP_VERSION" == */* ]]; then
+            PHP_BIN="$PHP_VERSION"
+        else
+            PHP_BIN="php$PHP_VERSION"
+        fi
+    fi
+fi
+if [ -z "$PHP_BIN" ]; then
+    PHP_BIN="php"
+fi
+exec "$PHP_BIN" syncdb.php "$@"

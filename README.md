@@ -47,7 +47,7 @@ Choose one of the two following options:
 
 ## Installation
 
-### Mac / Windows (WSL2) / Linux
+### Linux / Mac / Windows (WSL2)
 
 ```bash
 mkdir ~/.syncdb
@@ -70,7 +70,7 @@ Now add `C:\Users\xxx\.syncdb\vendor\vielhuber\syncdb\src\` to your path environ
 
 ## Update
 
-### Mac / Windows (WSL2) / Linux
+### Linux / Mac / Windows (WSL2)
 
 ```bash
 cd ~/.syncdb
@@ -130,43 +130,6 @@ nano example.json
 ```
 
 You can find more examples in the profiles folder in this git repo.
-
-## SQLite
-
-SQLite databases are synchronized as files. Use the `database` key for the SQLite file path:
-
-```json
-{
-    "engine": "sqlite",
-    "cmd": "sqlite3",
-    "source": {
-        "database": "/var/www/example-production/storage/database.sqlite",
-        "cmd": "sqlite3",
-        "ssh": {
-            "host": "EXAMPLE",
-            "username": "EXAMPLE",
-            "key": "~/.ssh/id_rsa"
-        }
-    },
-    "target": {
-        "database": "/var/www/example-local/storage/database.sqlite",
-        "ssh": false
-    }
-}
-```
-
-For local SQLite sources, the PHP `sqlite3` extension is required. For search/replace, the local `sqlite3` command is required and can be customized with `cmd`. For remote SQLite sources, the remote host must provide the `sqlite3` command; it can be customized with `source.cmd`.
-
-Search/replace uses the same `magicreplace` mechanism as MySQL:
-
-```json
-{
-    "replace": {
-        "https://www.example.com": "http://www.example.local",
-        "www.example.com": "www.example.local"
-    }
-}
-```
 
 ## Excluding table data
 
