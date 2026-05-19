@@ -389,10 +389,10 @@ final class syncdb
                         $config->source->ssh->host .
                         " \"" .
                         (isset($config->source->ssh->rm) ? $config->source->ssh->rm : 'rm -f') .
-                        ' "' .
+                        ' \"' .
                         (isset($config->source->ssh->tmp_dir) ? $config->source->ssh->tmp_dir : '/tmp/') .
                         $tmp_filename .
-                        ".zip\"\"";
+                        '.zip\\""';
                     self::executeCommand($command, '--- DELETING REMOTE TMP ZIP...');
                     $command =
                         (isset($config->source->ssh->password)
@@ -408,10 +408,10 @@ final class syncdb
                         $config->source->ssh->host .
                         " \"" .
                         (isset($config->source->ssh->rm) ? $config->source->ssh->rm : 'rm -f') .
-                        ' "' .
+                        ' \"' .
                         (isset($config->source->ssh->tmp_dir) ? $config->source->ssh->tmp_dir : '/tmp/') .
                         $tmp_filename .
-                        "\"\"";
+                        '\\""';
                     self::executeCommand($command, '--- DELETING REMOTE TMP DATABASE...');
                 } else {
                     $command =
@@ -447,10 +447,10 @@ final class syncdb
                         $config->source->ssh->host .
                         " \"" .
                         (isset($config->source->ssh->rm) ? $config->source->ssh->rm : 'rm -f') .
-                        ' "' .
+                        ' \"' .
                         (isset($config->source->ssh->tmp_dir) ? $config->source->ssh->tmp_dir : '/tmp/') .
                         $tmp_filename .
-                        "\"\"";
+                        '\\""';
                     self::executeCommand($command, '--- DELETING REMOTE TMP DATABASE...');
                 }
             }
