@@ -29,6 +29,9 @@ final class syncdb
 
     public static function escapePassword(string $password, mixed $ssh = null): string
     {
+        if (preg_match('/[\0\r\n]/', $password) === 1) {
+            throw new \RuntimeException('unsafe password value');
+        }
         if (self::getOs() === 'windows') {
             if (isset($ssh) && $ssh !== null && $ssh != '') {
                 $password = '""' . $password . '""';
@@ -36,7 +39,7 @@ final class syncdb
                 $password = '"' . $password . '"';
             }
         } else {
-            foreach (['*', '?', '[', '<', '>', '&', ';', '!', '|', '$', '(', ')', ' '] as $escapeCharacter) {
+            foreach (['\\', '"', '*', '?', '[', '<', '>', '&', ';', '!', '|', '$', '(', ')', ' '] as $escapeCharacter) {
                 $password = str_replace($escapeCharacter, '\\' . $escapeCharacter, $password);
             }
             if (isset($ssh) && $ssh !== null && $ssh != '') {
@@ -51,6 +54,9 @@ final class syncdb
 
     public static function escapeCmd(string $cmd): string
     {
+        if (preg_match('/[\0\r\n;&|`$<>]/', $cmd) === 1) {
+            throw new \RuntimeException('unsafe cmd value');
+        }
         if (strpos($cmd, '--') !== false) {
             $cmd = "\"" . trim(substr($cmd, 0, strpos($cmd, '--'))) . "\" " . trim(substr($cmd, strpos($cmd, '--')));
         } elseif (strpos($cmd, '.sh') !== false && strpos($cmd, ' ') !== false) {
@@ -116,11 +122,67 @@ final class syncdb
         );
     }
 
+    private static function validateProfileValue(mixed $value, string $field, bool $allowSpaces = false): void
+    {
+        if ($value === null || $value === false || $value === true || is_int($value) || is_float($value)) {
+            return;
+        }
+        if (is_array($value)) {
+            foreach ($value as $key => $item) {
+                self::validateProfileValue($item, $field . '.' . $key, $allowSpaces);
+            }
+            return;
+        }
+        if (!is_string($value)) {
+            return;
+        }
+        $pattern = $allowSpaces ? '/[\0\r\n;&|`$<>]/' : '/[\0\r\n;&|`$<>"\'\s]/';
+        if (preg_match($pattern, $value) === 1) {
+            throw new \RuntimeException('unsafe profile value in ' . $field);
+        }
+    }
+
+    private static function validateEndpointConfig(\stdClass $endpoint, string $prefix): void
+    {
+        foreach (['host', 'port', 'username', 'database'] as $field) {
+            if (isset($endpoint->{$field})) {
+                self::validateProfileValue($endpoint->{$field}, $prefix . '.' . $field);
+            }
+        }
+        if (isset($endpoint->cmd)) {
+            self::validateProfileValue($endpoint->cmd, $prefix . '.cmd', true);
+        }
+        if (!isset($endpoint->ssh) || $endpoint->ssh === false) {
+            return;
+        }
+        foreach (['host', 'port', 'username', 'key', 'tmp_dir'] as $field) {
+            if (isset($endpoint->ssh->{$field})) {
+                self::validateProfileValue($endpoint->ssh->{$field}, $prefix . '.ssh.' . $field);
+            }
+        }
+        if (isset($endpoint->ssh->rm)) {
+            self::validateProfileValue($endpoint->ssh->rm, $prefix . '.ssh.rm', true);
+        }
+    }
+
+    private static function validateConfig(\stdClass $config): void
+    {
+        foreach (['source', 'target'] as $endpoint) {
+            if (isset($config->{$endpoint}) && $config->{$endpoint} instanceof \stdClass) {
+                self::validateEndpointConfig($config->{$endpoint}, $endpoint);
+            }
+        }
+        if (isset($config->ignore_table_data) && is_array($config->ignore_table_data)) {
+            self::validateProfileValue($config->ignore_table_data, 'ignore_table_data');
+        }
+    }
+
     public static function sync(string $profile): void
     {
         $time = microtime(true);
 
         $config = self::readConfig($profile);
+        self::validateConfig($config);
 
         /*
         if (self::getOs() !== 'windows') {
