@@ -74,6 +74,7 @@ Now add `C:\Users\xxx\.syncdb\vendor\vielhuber\syncdb\src\` to your path environ
 
 ```bash
 cd ~/.syncdb
+composer upgrade-all
 composer update
 chmod +x vendor/vielhuber/syncdb/src/syncdb
 ```
@@ -82,6 +83,7 @@ chmod +x vendor/vielhuber/syncdb/src/syncdb
 
 ```bash
 cd "%USERPROFILE%/.syncdb"
+composer upgrade-all
 composer update
 ```
 
