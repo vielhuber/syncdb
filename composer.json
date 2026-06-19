@@ -10,5 +10,6 @@
         "psr-4": {
             "vielhuber\\syncdb\\": "src/"
         }
-    }
+    },
+    "bin": ["src/syncdb"]
 }

@@ -53,10 +53,10 @@ Choose one of the two following options:
 mkdir ~/.syncdb
 cd ~/.syncdb
 composer require vielhuber/syncdb
-chmod +x vendor/vielhuber/syncdb/src/syncdb
+chmod +x vendor/bin/syncdb
 ```
 
-Now add `~/.syncdb/vendor/vielhuber/syncdb/src/` to your path environment.
+Now add `~/.syncdb/vendor/bin/` to your path environment.
 
 ### Windows (CMD)
 
@@ -66,7 +66,7 @@ cd "%USERPROFILE%/.syncdb"
 composer require vielhuber/syncdb
 ```
 
-Now add `C:\Users\xxx\.syncdb\vendor\vielhuber\syncdb\src\` to your path environment.
+Now add `C:\Users\xxx\.syncdb\vendor\bin\` to your path environment.
 
 ## Update
 
@@ -76,7 +76,7 @@ Now add `C:\Users\xxx\.syncdb\vendor\vielhuber\syncdb\src\` to your path environ
 cd ~/.syncdb
 composer upgrade-all
 composer update
-chmod +x vendor/vielhuber/syncdb/src/syncdb
+chmod +x vendor/bin/syncdb
 ```
 
 ### Windows (CMD)
