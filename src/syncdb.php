@@ -32,20 +32,21 @@ final class syncdb
         if (preg_match('/[\0\r\n]/', $password) === 1) {
             throw new \RuntimeException('unsafe password value');
         }
+        $hasSsh = $ssh !== null && $ssh !== false && $ssh !== '';
         if (self::getOs() === 'windows') {
-            if (isset($ssh) && $ssh !== null && $ssh != '') {
+            if ($hasSsh) {
                 $password = '""' . $password . '""';
             } else {
                 $password = '"' . $password . '"';
             }
         } else {
+            if ($hasSsh && $ssh !== true) {
+                return str_replace(['$', '`'], ['\\$', '\\`'], escapeshellarg($password));
+            }
             foreach (['\\', '"', '*', '?', '[', '<', '>', '&', ';', '!', '|', '$', '(', ')', ' '] as $escapeCharacter) {
                 $password = str_replace($escapeCharacter, '\\' . $escapeCharacter, $password);
             }
-            if (isset($ssh) && $ssh !== null && $ssh != '') {
-                // this is currently disabled (try out on other shells)
-                //$password = '\\"' . $password . '\\"';
-            } else {
+            if (!$hasSsh) {
                 $password = '"' . $password . '"';
             }
         }
