@@ -27,7 +27,7 @@ final class syncdb
         return 'unknown';
     }
 
-    public static function escapePassword(string $password, mixed $ssh = null): string
+    public static function escapePassword(string $password, mixed $ssh = null, mixed $cmd = null): string
     {
         if (preg_match('/[\0\r\n]/', $password) === 1) {
             throw new \RuntimeException('unsafe password value');
@@ -41,6 +41,9 @@ final class syncdb
             }
         } else {
             if ($hasSsh && $ssh !== true) {
+                if (self::isRemoteWindows($ssh, $cmd)) {
+                    return str_replace(['\\', '"', '$', '`'], ['\\\\', '\\"', '\\$', '\\`'], $password);
+                }
                 return str_replace(['$', '`'], ['\\$', '\\`'], escapeshellarg($password));
             }
             foreach (['\\', '"', '*', '?', '[', '<', '>', '&', ';', '!', '|', '$', '(', ')', ' '] as $escapeCharacter) {
@@ -51,6 +54,23 @@ final class syncdb
             }
         }
         return $password;
+    }
+
+    private static function isRemoteWindows(mixed $ssh, mixed $cmd = null): bool
+    {
+        if ($ssh === null || $ssh === false || $ssh === '' || $ssh === true) {
+            return false;
+        }
+        if (is_object($ssh) && isset($ssh->os) && strtolower((string) $ssh->os) === 'windows') {
+            return true;
+        }
+        if (is_object($ssh) && isset($ssh->tmp_dir) && preg_match('/^[A-Z]:[\/\\\\]/i', (string) $ssh->tmp_dir) === 1) {
+            return true;
+        }
+        if (is_string($cmd) && preg_match('/(^|[\/\\\\\s])[^\/\\\\\s]+\.exe(\s|$)/i', $cmd) === 1) {
+            return true;
+        }
+        return false;
     }
 
     public static function escapeCmd(string $cmd): string
@@ -312,7 +332,11 @@ final class syncdb
                 ' -u ' .
                 $config->source->username .
                 ' -p' .
-                self::escapePassword((string) $config->source->password, $config->source->ssh ?? null) .
+                self::escapePassword(
+                    (string) $config->source->password,
+                    $config->source->ssh ?? null,
+                    $config->source->cmd ?? null
+                ) .
                 ($add_disable_column_statistics === true ? ' --column-statistics=0 ' : '') .
                 ($add_ssl_mode === true ? ' --ssl-mode=DISABLED ' : '') .
                 ' --skip-add-locks --skip-comments --extended-insert=true --disable-keys=false --quick --default-character-set=utf8mb4 ' .
@@ -637,7 +661,11 @@ final class syncdb
                 ' -u ' .
                 $config->target->username .
                 ' -p' .
-                self::escapePassword((string) $config->target->password, $config->target->ssh ?? null) .
+                self::escapePassword(
+                    (string) $config->target->password,
+                    $config->target->ssh ?? null,
+                    $config->target->cmd ?? null
+                ) .
                 ' -e ' .
                 $quote .
                 'drop database if exists ' .
@@ -693,7 +721,11 @@ final class syncdb
                 ' -u ' .
                 $config->target->username .
                 ' -p' .
-                self::escapePassword((string) $config->target->password, $config->target->ssh ?? null) .
+                self::escapePassword(
+                    (string) $config->target->password,
+                    $config->target->ssh ?? null,
+                    $config->target->cmd ?? null
+                ) .
                 ' ' .
                 $config->target->database .
                 ' --default-character-set=utf8mb4';
