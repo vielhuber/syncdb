@@ -3,7 +3,7 @@
     "description": "Syncs a database (mysql, pgsql) between two servers (optional via ssh tunnel).",
     "require": {
         "php": ">=8.1",
-        "vielhuber/magicreplace": "^1.6.8"
+        "vielhuber/magicreplace": "^1.6.9"
     },
     "license": "MIT",
     "autoload": {
