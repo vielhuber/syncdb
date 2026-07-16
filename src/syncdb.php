@@ -173,6 +173,9 @@ final class syncdb
         if (isset($endpoint->cmd)) {
             self::validateProfileValue($endpoint->cmd, $prefix . '.cmd', true);
         }
+        if (property_exists($endpoint, 'sql_log_bin') && !is_bool($endpoint->sql_log_bin)) {
+            throw new \RuntimeException('invalid profile value in ' . $prefix . '.sql_log_bin');
+        }
         if (!isset($endpoint->ssh) || $endpoint->ssh === false) {
             return;
         }
@@ -566,6 +569,12 @@ final class syncdb
             $time_tmp = microtime(true);
             echo '--- DOING OPTIMIZATIONS...';
             $sed_quote = self::getOs() === 'windows' ? '"' : "'";
+            $sql_log_bin_before = '';
+            $sql_log_bin_after = '';
+            if (($config->target->sql_log_bin ?? true) === true) {
+                $sql_log_bin_before = '\;SET @OLD_SQL_LOG_BIN=@@SESSION.SQL_LOG_BIN\;SET SESSION SQL_LOG_BIN=0';
+                $sql_log_bin_after = 'SET SESSION SQL_LOG_BIN=@OLD_SQL_LOG_BIN\;';
+            }
             shell_exec(
                 'sed -i' .
                     (self::getOs() === 'mac' ? " ''" : '') .
@@ -579,13 +588,16 @@ final class syncdb
                     $sed_quote .
                     ' -e ' .
                     $sed_quote .
-                    '1s;^;\;SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, AUTOCOMMIT = 0\;SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS = 0\;SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS = 0\;;' .
+                    '1s;^;' .
+                    $sql_log_bin_before .
+                    '\;SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, AUTOCOMMIT = 0\;SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS = 0\;SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS = 0\;;' .
                     $sed_quote .
                     ' -e ' .
                     $sed_quote .
                     '$ a' .
                     (self::getOs() === 'mac' ? "\'$'\\n''" : '') .
                     ' \;SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS\;SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS\;SET AUTOCOMMIT = @OLD_AUTOCOMMIT\;COMMIT\;' .
+                    $sql_log_bin_after .
                     $sed_quote .
                     ' ' .
                     $tmp_filename .

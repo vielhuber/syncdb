@@ -1,9 +1,9 @@
 {
     "description": "",
-    "version": "0.1.0",
+    "version": "2.1.0",
     "dependencies": {},
     "devDependencies": {
         "@prettier/plugin-php": "^0.25.0",
-        "prettier": "^3.8.4"
+        "prettier": "^3.9.5"
     }
 }

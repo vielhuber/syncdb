@@ -147,6 +147,8 @@ Therefore you can use the `ignore_table_data`-directive in your `json`-config:
 
 ## Privileges
 
+For faster MySQL imports, `syncdb` disables binary logging by default and restores it afterwards. This requires `SESSION_VARIABLES_ADMIN`, `SYSTEM_VARIABLES_ADMIN` or the deprecated `SUPER` privilege; set `"sql_log_bin": false` on the target if these privileges are unavailable.
+
 Since MySQL 5.7 and MySQL 8.0.21 accessing the INFORMATION_SCHEMA.FILES table now requires the PROCESS privilege. Most providers don't have this option available. This results in the error message:
 
 ```
