@@ -27,7 +27,7 @@ syncdb syncs databases between two servers.
 
 ## Requirements
 
-- PHP >= 8.1
+- PHP >= `8.1`
 
 #### Mac
 
