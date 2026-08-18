@@ -1,0 +1,36 @@
+name: CI
+
+env:
+    CI: true
+
+on:
+    workflow_dispatch:
+    push:
+
+jobs:
+    build-test:
+        runs-on: ubuntu-latest
+
+        strategy:
+            fail-fast: true
+            matrix:
+                php-versions: ['8.5']
+
+        name: PHP ${{ matrix.php-versions }}
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+
+            - name: PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '${{ matrix.php-versions }}'
+                  extensions: sqlite3
+                  coverage: none
+
+            - name: Composer
+              run: composer install --no-interaction
+
+            - name: PHPUnit
+              run: ./vendor/bin/phpunit

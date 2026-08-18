@@ -1040,6 +1040,10 @@ final class syncdb
 }
 
 // usage from command line
+if (realpath((string) ($_SERVER['SCRIPT_FILENAME'] ?? '')) !== __FILE__) {
+    return;
+}
+
 if (
     !isset($argv) ||
     empty($argv) ||

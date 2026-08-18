@@ -13,5 +13,8 @@
     },
     "bin": [
         "src/syncdb"
-    ]
+    ],
+    "require-dev": {
+        "phpunit/phpunit": "^10.5 || ^11 || ^12 || ^13"
+    }
 }

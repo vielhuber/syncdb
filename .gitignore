@@ -6,3 +6,5 @@
 composer.lock
 /node_modules/
 /package-lock.json
+/.phpunit.result.cache
+/.phpunit.cache
