@@ -206,6 +206,9 @@ final class syncdb
         $time = microtime(true);
 
         $config = self::readConfig($profile);
+        if (!in_array($config->engine ?? null, ['mysql', 'sqlite'], true)) {
+            throw new \RuntimeException('unsupported database engine');
+        }
         self::validateConfig($config);
 
         /*
@@ -471,7 +474,7 @@ final class syncdb
                     if (!file_exists($tmp_filename . '.zip') || filesize($tmp_filename . '.zip') == 0) {
                         echo '--- AN ERROR OCCURED!' . PHP_EOL;
                         self::cleanUp();
-                        die();
+                        throw new \RuntimeException('database archive is missing or empty');
                     }
                     $command = 'unzip -j -o ' . $tmp_filename . '.zip';
                     self::executeCommand($command, '--- UNZIPPING ZIP FILE...');
@@ -560,7 +563,7 @@ final class syncdb
             if (!file_exists($tmp_filename) || filesize($tmp_filename) == 0) {
                 echo '--- AN ERROR OCCURED!' . PHP_EOL;
                 self::cleanUp();
-                die();
+                throw new \RuntimeException('database dump is missing or empty');
             }
 
             // replacing corrupt collations
@@ -765,10 +768,6 @@ final class syncdb
             echo '- FINISHED (' . number_format(microtime(true) - $time, 2) . 's)' . PHP_EOL;
         }
 
-        if ($config->engine === 'pgsql') {
-            // TODO
-        }
-
         if ($config->engine === 'sqlite') {
             $sourceFile = (string) ($config->source->database ?? '');
             $targetFile = (string) ($config->target->database ?? '');
@@ -776,7 +775,7 @@ final class syncdb
             if ($sourceFile === '' || $targetFile === '') {
                 echo '--- AN ERROR OCCURED!' . PHP_EOL;
                 self::cleanUp();
-                die();
+                throw new \RuntimeException('source and target database paths are required');
             }
 
             if (isset($config->source->ssh) && $config->source->ssh !== false) {
@@ -827,14 +826,14 @@ final class syncdb
                     echo PHP_EOL;
                     echo '--- AN ERROR OCCURED!' . PHP_EOL;
                     self::cleanUp();
-                    die();
+                    throw new \RuntimeException('source database is not readable');
                 }
 
                 if (!class_exists(\SQLite3::class)) {
                     echo PHP_EOL;
                     echo '--- SQLITE3 EXTENSION IS MISSING' . PHP_EOL;
                     self::cleanUp();
-                    die();
+                    throw new \RuntimeException('SQLite3 extension is missing');
                 }
 
                 if (file_exists($tmp_filename)) {
@@ -855,7 +854,7 @@ final class syncdb
                     echo PHP_EOL;
                     echo '--- AN ERROR OCCURED!' . PHP_EOL;
                     self::cleanUp();
-                    die();
+                    throw new \RuntimeException('SQLite backup failed');
                 }
 
                 echo ' (' . number_format(microtime(true) - $time_tmp, 2) . 's)';
@@ -865,7 +864,7 @@ final class syncdb
             if (!file_exists($tmp_filename) || filesize($tmp_filename) === 0) {
                 echo '--- AN ERROR OCCURED!' . PHP_EOL;
                 self::cleanUp();
-                die();
+                throw new \RuntimeException('database backup is missing or empty');
             }
 
             if (isset($config->replace)) {
@@ -954,7 +953,7 @@ final class syncdb
                     echo PHP_EOL;
                     echo '--- AN ERROR OCCURED!' . PHP_EOL;
                     self::cleanUp();
-                    die();
+                    throw new \RuntimeException('copying the target database failed');
                 }
 
                 echo ' (' . number_format(microtime(true) - $time_tmp, 2) . 's)';
@@ -1007,18 +1006,8 @@ final class syncdb
         }
 
         if ($exitCode !== 0 || self::logHasError()) {
-            echo '--- AN ERROR OCCURED!' . PHP_EOL;
-            echo PHP_EOL;
-            echo 'command:';
-            echo PHP_EOL;
-            echo $command;
-            echo PHP_EOL;
-            echo PHP_EOL;
-            echo 'output:';
-            echo PHP_EOL;
-            echo file_exists('log.txt') ? file_get_contents('log.txt') : '';
             self::cleanUp();
-            die();
+            throw new \RuntimeException('database command failed');
         }
     }
 
@@ -1050,7 +1039,13 @@ if (
     !isset($argv[1]) ||
     !file_exists(syncdb::getBasepath() . '/profiles/' . $argv[1] . '.json')
 ) {
-    die('missing profile' . PHP_EOL);
+    fwrite(STDERR, 'missing profile' . PHP_EOL);
+    exit(1);
 }
 ini_set('memory_limit', '3000M');
-syncdb::sync($argv[1]);
+try {
+    syncdb::sync($argv[1]);
+} catch (\RuntimeException | \JsonException $exception) {
+    fwrite(STDERR, $exception->getMessage() . PHP_EOL);
+    exit(1);
+}

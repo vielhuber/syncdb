@@ -132,4 +132,53 @@ final class Test extends TestCase
         rmdir($runDirectory);
         rmdir($temporaryDirectory);
     }
+
+    public function testFailedCommandThrowsWithoutPrintingCommandOrStderr(): void
+    {
+        $temporaryDirectory = sys_get_temp_dir() . '/syncdb-' . bin2hex(random_bytes(8));
+        mkdir($temporaryDirectory, 0700);
+        chdir($temporaryDirectory);
+        ob_start();
+        try {
+            syncdb::executeCommand('sh -c \'echo PRIVATE_TEST_MARKER >&2; exit 7\'', 'Failure probe');
+            $this->fail('A failed command must throw.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('database command failed', $exception->getMessage());
+            $this->assertStringNotContainsString('PRIVATE_TEST_MARKER', ob_get_contents());
+        } finally {
+            ob_end_clean();
+            chdir($this->workingDirectory);
+            rmdir($temporaryDirectory);
+        }
+    }
+
+    public function testMissingProfileReturnsNonzeroExitCode(): void
+    {
+        exec(
+            escapeshellarg(PHP_BINARY) .
+                ' ' .
+                escapeshellarg(dirname(__DIR__) . '/src/syncdb.php') .
+                ' phpunit-missing-' .
+                bin2hex(random_bytes(8)) .
+                ' 2>&1',
+            $output,
+            $exitCode
+        );
+        $this->assertSame(1, $exitCode);
+        $this->assertSame(['missing profile'], $output);
+    }
+
+    public function testUnsupportedEngineDoesNotSilentlySucceed(): void
+    {
+        $profile = 'phpunit-' . bin2hex(random_bytes(8));
+        $profileFile = dirname(__DIR__) . '/profiles/' . $profile . '.json';
+        file_put_contents($profileFile, '{"engine":"pgsql","source":{},"target":{}}');
+        try {
+            $this->expectException(RuntimeException::class);
+            $this->expectExceptionMessageMatches('/\Aunsupported database engine\z/');
+            syncdb::sync($profile);
+        } finally {
+            unlink($profileFile);
+        }
+    }
 }
