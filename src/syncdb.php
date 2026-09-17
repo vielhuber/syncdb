@@ -570,8 +570,18 @@ final class syncdb
             // we do this with sed (because we want not to have php memory limit issues by using file_get_contents)
             // mac sed has a slightly different syntax than unix sed (so inplace editing is a little bit tricky)
             $time_tmp = microtime(true);
-            echo '--- DOING OPTIMIZATIONS...';
             $sed_quote = self::getOs() === 'windows' ? '"' : "'";
+            if ($config->source->database !== $config->target->database) {
+                self::executeCommand(
+                    'sed -E -i' . (self::getOs() === 'mac' ? " ''" : '') . ' -e ' . $sed_quote .
+                    's/^(\/\*![0-9]+ )?ALTER DATABASE `' . preg_quote($config->source->database, '/') .
+                    '` CHARACTER SET /\1ALTER DATABASE `' .
+                    str_replace(['\\', '/', '&'], ['\\\\', '\\/', '\\&'], $config->target->database) .
+                    '` CHARACTER SET /' . $sed_quote . ' ' . $tmp_filename,
+                    '--- REMAPPING ROUTINE DATABASE...'
+                );
+            }
+            echo '--- DOING OPTIMIZATIONS...';
             $sql_log_bin_before = '';
             $sql_log_bin_after = '';
             if (($config->target->sql_log_bin ?? true) === true) {
@@ -635,6 +645,14 @@ final class syncdb
             }
             echo ' (' . number_format(microtime(true) - $time_tmp, 2) . 's)';
             echo PHP_EOL;
+
+            // objects must belong to the importing account; impersonating the source definers needs SUPER
+            self::executeCommand(
+                'sed -E -i' . (self::getOs() === 'mac' ? " ''" : '') . ' -e ' . $sed_quote .
+                's/^((CREATE( OR REPLACE)?( ALGORITHM=[A-Z]+)?)|(\/\*![0-9]+( CREATE\*\/ \/\*![0-9]+)?)) ' .
+                'DEFINER=`([^`]|``)*`@`([^`]|``)*`/\1 DEFINER=CURRENT_USER/' . $sed_quote . ' ' . $tmp_filename,
+                '--- RESETTING OBJECT DEFINERS...'
+            );
 
             // search / replace
             if (isset($config->replace)) {
