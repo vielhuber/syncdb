@@ -102,6 +102,12 @@ final class syncdb
         throw new \RuntimeException('wrong path');
     }
 
+    public static function commandExists(string $name): bool
+    {
+        exec('command -v ' . escapeshellarg($name) . ' 2>/dev/null', $output, $exitCode);
+        return $exitCode === 0;
+    }
+
     public static function cleanUp(): void
     {
         if (self::$debug === true) {
@@ -753,9 +759,13 @@ final class syncdb
                     $config->target->ssh->host .
                     " \"";
             }
-            $progress = self::getOs() === 'linux' && (!isset($config->target->ssh) || $config->target->ssh === false);
+            $progress =
+                self::getOs() === 'linux' &&
+                (!isset($config->target->ssh) || $config->target->ssh === false) &&
+                self::commandExists('pv');
             if ($progress === true) {
-                $command .= "pv \"" . $tmp_filename . "\" | ";
+                // group the pipeline so that a failing pv is logged and detected instead of importing nothing
+                $command .= "( pv \"" . $tmp_filename . "\" | ";
             }
             $command .=
                 (isset($config->target->cmd) ? self::escapeCmd($config->target->cmd) : "\"mysql\"") .
@@ -779,6 +789,8 @@ final class syncdb
             }
             if ($progress === false) {
                 $command .= " < \"" . $tmp_filename . "\"";
+            } else {
+                $command .= ' )';
             }
 
             self::executeCommand($command, '--- RESTORING DATABASE...');
