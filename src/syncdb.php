@@ -13,6 +13,8 @@ final class syncdb
 
     public static ?int $session_id = null;
 
+    public static bool $cache_hit = false;
+
     public static function getOs(): string
     {
         if (stristr(PHP_OS, 'DAR')) {
@@ -115,7 +117,6 @@ final class syncdb
         }
         foreach (glob('{,.}*', GLOB_BRACE) as $file) {
             if (is_file($file) && !in_array($file, ['syncdb', 'syncdb.php', 'syncdb.bat'])) {
-                $filename = substr($file, 0, strpos($file, '.'));
                 $filename = substr($file, 0, 13);
                 // other files (log file)
                 if (!is_numeric($filename)) {
@@ -205,6 +206,11 @@ final class syncdb
         if (isset($config->ignore_table_data) && is_array($config->ignore_table_data)) {
             self::validateProfileValue($config->ignore_table_data, 'ignore_table_data');
         }
+        foreach (['cache', 'threads'] as $field) {
+            if (isset($config->{$field}) && (!is_int($config->{$field}) || $config->{$field} < 0)) {
+                throw new \RuntimeException('invalid profile value in ' . $field);
+            }
+        }
     }
 
     public static function sync(string $profile): void
@@ -239,6 +245,7 @@ final class syncdb
         self::cleanUp();
 
         if ($config->engine === 'mysql') {
+            self::$cache_hit = self::restoreFromCache($config, $tmp_filename);
             $command = '';
             $command .=
                 (isset($config->source->ssh) && $config->source->ssh !== false
@@ -477,7 +484,10 @@ final class syncdb
                         $tmp_filename .
                         '.zip';
                     self::executeCommand($command, '--- COPYING DATABASE TO SOURCE...');
-                    if (!file_exists($tmp_filename . '.zip') || filesize($tmp_filename . '.zip') == 0) {
+                    if (
+                        self::$cache_hit !== true &&
+                        (!file_exists($tmp_filename . '.zip') || filesize($tmp_filename . '.zip') == 0)
+                    ) {
                         echo '--- AN ERROR OCCURED!' . PHP_EOL;
                         self::cleanUp();
                         throw new \RuntimeException('database archive is missing or empty');
@@ -571,6 +581,7 @@ final class syncdb
                 self::cleanUp();
                 throw new \RuntimeException('database dump is missing or empty');
             }
+            self::storeCache($config, $tmp_filename);
 
             // replacing corrupt collations
             // we do this with sed (because we want not to have php memory limit issues by using file_get_contents)
@@ -579,11 +590,18 @@ final class syncdb
             $sed_quote = self::getOs() === 'windows' ? '"' : "'";
             if ($config->source->database !== $config->target->database) {
                 self::executeCommand(
-                    'sed -E -i' . (self::getOs() === 'mac' ? " ''" : '') . ' -e ' . $sed_quote .
-                    's/^(\/\*![0-9]+ )?ALTER DATABASE `' . preg_quote($config->source->database, '/') .
-                    '` CHARACTER SET /\1ALTER DATABASE `' .
-                    str_replace(['\\', '/', '&'], ['\\\\', '\\/', '\\&'], $config->target->database) .
-                    '` CHARACTER SET /' . $sed_quote . ' ' . $tmp_filename,
+                    'sed -E -i' .
+                        (self::getOs() === 'mac' ? " ''" : '') .
+                        ' -e ' .
+                        $sed_quote .
+                        's/^(\/\*![0-9]+ )?ALTER DATABASE `' .
+                        preg_quote($config->source->database, '/') .
+                        '` CHARACTER SET /\1ALTER DATABASE `' .
+                        str_replace(['\\', '/', '&'], ['\\\\', '\\/', '\\&'], $config->target->database) .
+                        '` CHARACTER SET /' .
+                        $sed_quote .
+                        ' ' .
+                        $tmp_filename,
                     '--- REMAPPING ROUTINE DATABASE...'
                 );
             }
@@ -654,9 +672,15 @@ final class syncdb
 
             // objects must belong to the importing account; impersonating the source definers needs SUPER
             self::executeCommand(
-                'sed -E -i' . (self::getOs() === 'mac' ? " ''" : '') . ' -e ' . $sed_quote .
-                's/^((CREATE( OR REPLACE)?( ALGORITHM=[A-Z]+)?)|(\/\*![0-9]+( CREATE\*\/ \/\*![0-9]+)?)) ' .
-                'DEFINER=`([^`]|``)*`@`([^`]|``)*`/\1 DEFINER=CURRENT_USER/' . $sed_quote . ' ' . $tmp_filename,
+                'sed -E -i' .
+                    (self::getOs() === 'mac' ? " ''" : '') .
+                    ' -e ' .
+                    $sed_quote .
+                    's/^((CREATE( OR REPLACE)?( ALGORITHM=[A-Z]+)?)|(\/\*![0-9]+( CREATE\*\/ \/\*![0-9]+)?)) ' .
+                    'DEFINER=`([^`]|``)*`@`([^`]|``)*`/\1 DEFINER=CURRENT_USER/' .
+                    $sed_quote .
+                    ' ' .
+                    $tmp_filename,
                 '--- RESETTING OBJECT DEFINERS...'
             );
 
@@ -793,7 +817,7 @@ final class syncdb
                 $command .= ' )';
             }
 
-            self::executeCommand($command, '--- RESTORING DATABASE...');
+            self::restore($config, $command, $tmp_filename);
 
             echo '- FINISHED (' . number_format(microtime(true) - $time, 2) . 's)' . PHP_EOL;
         }
@@ -808,6 +832,7 @@ final class syncdb
                 throw new \RuntimeException('source and target database paths are required');
             }
 
+            self::$cache_hit = self::restoreFromCache($config, $tmp_filename);
             if (isset($config->source->ssh) && $config->source->ssh !== false) {
                 $remoteTmpFile =
                     rtrim((string) ($config->source->ssh->tmp_dir ?? '/tmp/'), '/') . '/' . basename($tmp_filename);
@@ -848,7 +873,7 @@ final class syncdb
                         escapeshellarg($tmp_filename),
                     '--- BACKING UP DATABASE...'
                 );
-            } else {
+            } elseif (self::$cache_hit !== true) {
                 $time_tmp = microtime(true);
                 echo '--- BACKING UP DATABASE...';
 
@@ -896,6 +921,7 @@ final class syncdb
                 self::cleanUp();
                 throw new \RuntimeException('database backup is missing or empty');
             }
+            self::storeCache($config, $tmp_filename);
 
             if (isset($config->replace)) {
                 $time_tmp = microtime(true);
@@ -996,6 +1022,230 @@ final class syncdb
         self::cleanUp();
     }
 
+    // cache: minutes for which the fetched dump is reused from the syncdb folder of the system temp directory;
+    // the key is built from the source without its secrets
+
+    public static function cacheFile(\stdClass $config): ?string
+    {
+        if ((int) ($config->cache ?? 0) < 1) {
+            return null;
+        }
+        $source = $config->source;
+        $identity = [
+            $config->engine ?? null,
+            $source->host ?? null,
+            $source->port ?? null,
+            $source->database ?? null,
+            $source->username ?? null,
+            $source->cmd ?? null,
+            isset($source->ssh) && $source->ssh !== false
+                ? [$source->ssh->host ?? null, $source->ssh->port ?? null, $source->ssh->username ?? null]
+                : null,
+            $config->ignore_table_data ?? null
+        ];
+        return sys_get_temp_dir() .
+            '/syncdb/' .
+            hash('sha256', json_encode($identity, JSON_THROW_ON_ERROR)) .
+            ($config->engine === 'sqlite' ? '.sqlite' : '.sql');
+    }
+
+    private static function restoreFromCache(\stdClass $config, string $tmp_filename): bool
+    {
+        $file = self::cacheFile($config);
+        if ($file === null || !is_file($file) || filesize($file) === 0) {
+            return false;
+        }
+        $age = time() - filemtime($file);
+        if ($age > $config->cache * 60) {
+            return false;
+        }
+        if (!copy($file, $tmp_filename)) {
+            return false;
+        }
+        echo '--- USING CACHED DUMP (' . floor($age / 60) . 'm old)...' . PHP_EOL;
+        return true;
+    }
+
+    private static function storeCache(\stdClass $config, string $tmp_filename): void
+    {
+        $file = self::cacheFile($config);
+        if ($file === null || self::$cache_hit === true) {
+            return;
+        }
+        $directory = dirname($file);
+        if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
+            return;
+        }
+        // the copy lands under a temporary name, so a reader never sees a half-written dump
+        if (copy($tmp_filename, $file . '.tmp')) {
+            chmod($file . '.tmp', 0600);
+            rename($file . '.tmp', $file);
+        }
+    }
+
+    private static function isSourceStep(string $message): bool
+    {
+        foreach (
+            [
+                'DUMPING DATABASE',
+                'ZIPPING DATABASE',
+                'COPYING DATABASE TO SOURCE',
+                'UNZIPPING ZIP FILE',
+                'DELETING LOCAL ZIP',
+                'DELETING REMOTE TMP',
+                'BACKING UP DATABASE'
+            ]
+            as $step
+        ) {
+            if (str_contains($message, $step)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // threads: restores the tables of a mysql dump with that many clients at once; views, routines and events
+    // follow in one client after all tables exist
+
+    private static function restore(\stdClass $config, string $command, string $tmp_filename): void
+    {
+        $threads = (int) ($config->threads ?? 1);
+        $parts = null;
+        if (
+            $threads > 1 &&
+            (!isset($config->target->ssh) || $config->target->ssh === false) &&
+            self::getOs() !== 'windows'
+        ) {
+            $parts = self::splitDump($tmp_filename, $threads);
+        }
+        if ($parts === null) {
+            self::executeCommand($command, '--- RESTORING DATABASE...');
+            return;
+        }
+        $time = microtime(true);
+        echo '--- RESTORING DATABASE (' . count($parts['parts']) . ' THREADS)...';
+        // the client without the file redirection and the optional pv pipeline that wrap it
+        $client = preg_replace(
+            ['/^\( pv "[^"]*" \| /', '/ \)$/', '/ < "[^"]*"$/'],
+            '',
+            trim(preg_replace('/\s+/', ' ', $command))
+        );
+        $failed = false;
+        $processes = [];
+        foreach ($parts['parts'] as $index => $part) {
+            $processes[$index] = proc_open(
+                $client . ' < ' . escapeshellarg($part) . ' 2> ' . escapeshellarg($part . '.log'),
+                [],
+                $pipes
+            );
+        }
+        foreach ($processes as $index => $process) {
+            if (
+                !is_resource($process) ||
+                proc_close($process) !== 0 ||
+                self::logHasError($parts['parts'][$index] . '.log')
+            ) {
+                $failed = true;
+            }
+        }
+        if ($failed === false) {
+            exec(
+                $client . ' < ' . escapeshellarg($parts['tail']) . ' 2> ' . escapeshellarg($parts['tail'] . '.log'),
+                $output,
+                $exitCode
+            );
+            $failed = $exitCode !== 0 || self::logHasError($parts['tail'] . '.log');
+        }
+        echo ' (' . number_format(microtime(true) - $time, 2) . 's)';
+        echo PHP_EOL;
+        if ($failed === true) {
+            self::cleanUp();
+            throw new \RuntimeException('database command failed');
+        }
+    }
+
+    /**
+     * Cut a mysqldump file into parts: every part carries the header, gets whole tables by size and ends with a
+     * commit; views, routines, events and the footer form the tail. Returns null when the dump has no table marks.
+     */
+    public static function splitDump(string $filename, int $threads): ?array
+    {
+        $handle = fopen($filename, 'rb');
+        if ($handle === false) {
+            return null;
+        }
+        $header = null;
+        $tail = null;
+        $sections = [];
+        $offset = 0;
+        while (($line = fgets($handle)) !== false) {
+            $position = $offset;
+            $offset += strlen($line);
+            if ($header === null) {
+                if (str_starts_with($line, 'DROP TABLE IF EXISTS `')) {
+                    $header = [0, $position];
+                    $sections[] = [$position, $offset];
+                }
+                continue;
+            }
+            if ($tail === null && preg_match('/^(DROP TABLE IF EXISTS `)/', $line) === 1) {
+                $sections[] = [$position, $offset];
+                continue;
+            }
+            if (
+                $tail === null &&
+                preg_match(
+                    '#^(/\*!50001 DROP TABLE IF EXISTS|/\*!50003 DROP (FUNCTION|PROCEDURE) IF EXISTS|/\*!50106 (DROP EVENT IF EXISTS|SET @save_time_zone)|/\*!40103 SET TIME_ZONE=@OLD_TIME_ZONE| ?;SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS)#',
+                    $line
+                ) === 1
+            ) {
+                $tail = [$position, $offset];
+                continue;
+            }
+            if ($tail !== null) {
+                $tail[1] = $offset;
+            } else {
+                $sections[count($sections) - 1][1] = $offset;
+            }
+        }
+        if ($header === null || count($sections) < 2) {
+            fclose($handle);
+            return null;
+        }
+        // the largest tables first, each one to the part with the least bytes so far
+        usort($sections, fn($a, $b) => $b[1] - $b[0] <=> $a[1] - $a[0]);
+        $count = min($threads, count($sections));
+        $plan = array_fill(0, $count, []);
+        $load = array_fill(0, $count, 0);
+        foreach ($sections as $section) {
+            $index = array_search(min($load), $load, true);
+            $plan[$index][] = $section;
+            $load[$index] += $section[1] - $section[0];
+        }
+        $prefix = self::$session_id . '.part';
+        $files = [];
+        foreach ($plan as $index => $ranges) {
+            $files[$index] = $prefix . $index . '.sql';
+            $target = fopen($files[$index], 'wb');
+            foreach (array_merge([$header], $ranges) as [$start, $end]) {
+                fseek($handle, $start);
+                stream_copy_to_stream($handle, $target, $end - $start);
+            }
+            fwrite($target, PHP_EOL . 'COMMIT;' . PHP_EOL);
+            fclose($target);
+        }
+        $tailFile = $prefix . 'tail.sql';
+        $target = fopen($tailFile, 'wb');
+        foreach (array_filter([$header, $tail]) as [$start, $end]) {
+            fseek($handle, $start);
+            stream_copy_to_stream($handle, $target, $end - $start);
+        }
+        fwrite($target, PHP_EOL . 'COMMIT;' . PHP_EOL);
+        fclose($target);
+        fclose($handle);
+        return ['parts' => $files, 'tail' => $tailFile];
+    }
+
     public static function executeCommand(
         string $command,
         string $message,
@@ -1005,6 +1255,11 @@ final class syncdb
         $time = microtime(true);
 
         echo $message;
+
+        if (self::$cache_hit === true && self::isSourceStep($message)) {
+            echo ' (CACHED)' . PHP_EOL;
+            return;
+        }
 
         // remove newlines
         $command = trim(preg_replace('/\s+/', ' ', $command));
@@ -1041,12 +1296,12 @@ final class syncdb
         }
     }
 
-    public static function logHasError(): bool
+    public static function logHasError(string $file = 'log.txt'): bool
     {
-        if (!file_exists('log.txt')) {
+        if (!file_exists($file)) {
             return false;
         }
-        $log = file_get_contents('log.txt');
+        $log = file_get_contents($file);
         if (
             (stripos($log, 'error') !== false && stripos($log, 'GTID_PURGED') === false) ||
             stripos($log, 'not found') !== false

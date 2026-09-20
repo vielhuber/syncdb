@@ -246,4 +246,204 @@ final class Test extends TestCase
             rmdir($directory);
         }
     }
+
+    public function testCacheKeysIgnoreSecretsAndNeedMinutes(): void
+    {
+        $config = fn(string $password, string $database, int $cache = 30) => json_decode(
+            '{"engine":"mysql","cache":' . $cache . ',"source":{"host":"db","database":"' . $database . '","username":"u","password":"' . $password . '","ssh":{"host":"h","key":"' . $password . '"}}}',
+            false,
+            512,
+            JSON_THROW_ON_ERROR
+        );
+        $this->assertSame(syncdb::cacheFile($config('one', 'app')), syncdb::cacheFile($config('two', 'app')));
+        $this->assertNotSame(syncdb::cacheFile($config('one', 'app')), syncdb::cacheFile($config('one', 'other')));
+        $this->assertStringStartsWith(sys_get_temp_dir() . '/syncdb/', (string) syncdb::cacheFile($config('one', 'app')));
+        $this->assertNull(syncdb::cacheFile($config('one', 'app', 0)));
+        $this->assertNull(syncdb::cacheFile(json_decode('{"engine":"mysql","source":{"database":"app"}}', false, 512, JSON_THROW_ON_ERROR)));
+
+        $method = (new ReflectionClass(syncdb::class))->getMethod('validateConfig');
+        $method->invoke(null, json_decode('{"cache":30,"threads":8}', false, 512, JSON_THROW_ON_ERROR));
+        foreach (['{"cache":"30m"}', '{"threads":true}', '{"threads":-1}'] as $json) {
+            try {
+                $method->invoke(null, json_decode($json, false, 512, JSON_THROW_ON_ERROR));
+                $this->fail($json . ' was accepted');
+            } catch (RuntimeException $exception) {
+                $this->assertStringContainsString('invalid profile value', $exception->getMessage());
+            }
+        }
+    }
+
+    private function sampleDump(): string
+    {
+        return implode(PHP_EOL, [
+            'SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, AUTOCOMMIT = 0;/*!40101 SET NAMES utf8mb4 */;',
+            'DROP TABLE IF EXISTS `small`;',
+            'CREATE TABLE `small` (`id` int) ENGINE=InnoDB;',
+            'INSERT INTO `small` VALUES (1);',
+            'DROP TABLE IF EXISTS `large`;',
+            'CREATE TABLE `large` (`id` int, `body` text) ENGINE=InnoDB;',
+            'INSERT INTO `large` VALUES ' . str_repeat("(1,'" . str_repeat('x', 200) . "'),", 20) . "(2,'end');",
+            'DELIMITER ;;',
+            '/*!50003 CREATE*/ /*!50003 TRIGGER `large_after` AFTER INSERT ON `large` FOR EACH ROW BEGIN END */;;',
+            'DELIMITER ;',
+            'DROP TABLE IF EXISTS `medium`;',
+            'CREATE TABLE `medium` (`id` int) ENGINE=InnoDB;',
+            'INSERT INTO `medium` VALUES ' . str_repeat('(1),', 40) . '(2);',
+            'DROP TABLE IF EXISTS `overview`;',
+            '/*!50001 DROP VIEW IF EXISTS `overview`*/;',
+            '/*!50001 CREATE TABLE `overview` (`id` int) */;',
+            '/*!50001 DROP TABLE IF EXISTS `overview`*/;',
+            '/*!50001 CREATE VIEW `overview` AS select `id` from `small` */;',
+            '/*!50003 DROP FUNCTION IF EXISTS `answer` */;',
+            'DELIMITER ;;',
+            'CREATE FUNCTION `answer`() RETURNS int RETURN 42 ;;',
+            'DELIMITER ;',
+            '/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;',
+            ' ;SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;COMMIT;',
+            ''
+        ]);
+    }
+
+    public function testDumpIsSplitIntoBalancedPartsWithSharedHeaderAndTailLast(): void
+    {
+        $runDirectory = sys_get_temp_dir() . '/syncdb-' . bin2hex(random_bytes(8));
+        mkdir($runDirectory, 0700, true);
+        chdir($runDirectory);
+        syncdb::$session_id = intval(microtime(true) * 1000);
+        file_put_contents('dump.sql', $this->sampleDump());
+
+        $split = syncdb::splitDump('dump.sql', 2);
+
+        $this->assertNotNull($split);
+        $this->assertCount(2, $split['parts']);
+        $parts = array_map(fn($file) => file_get_contents($file), $split['parts']);
+        $tail = file_get_contents($split['tail']);
+        foreach (array_merge($parts, [$tail]) as $content) {
+            $this->assertStringStartsWith('SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, AUTOCOMMIT = 0;', $content);
+            $this->assertStringEndsWith(PHP_EOL . 'COMMIT;' . PHP_EOL, $content);
+        }
+        foreach (['small', 'large', 'medium', 'overview'] as $table) {
+            $this->assertSame(1, substr_count(implode('', $parts), 'DROP TABLE IF EXISTS `' . $table . '`;'), $table);
+        }
+        // the trigger stays with its table, the largest table gets a part of its own
+        $large = $parts[array_search(true, array_map(fn($part) => str_contains($part, 'CREATE TABLE `large`'), $parts), true)];
+        $this->assertStringContainsString('TRIGGER `large_after`', $large);
+        $this->assertStringNotContainsString('CREATE TABLE `medium`', $large);
+        $this->assertStringNotContainsString('CREATE VIEW', implode('', $parts));
+        $this->assertStringContainsString('CREATE VIEW `overview`', $tail);
+        $this->assertStringContainsString('CREATE FUNCTION `answer`', $tail);
+        $this->assertStringContainsString('SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS', $tail);
+        $this->assertStringNotContainsString('INSERT INTO', $tail);
+        // a dump without table marks stays in one piece
+        file_put_contents('flat.sql', 'INSERT INTO `x` VALUES (1);' . PHP_EOL);
+        $this->assertNull(syncdb::splitDump('flat.sql', 4));
+
+        // cleanUp removes every non-session file of the run directory
+        syncdb::cleanUp();
+        chdir($this->workingDirectory);
+        rmdir($runDirectory);
+    }
+
+    public function testParallelRestoreFeedsEveryPartToTheClientAndTheTailLast(): void
+    {
+        $runDirectory = sys_get_temp_dir() . '/syncdb-' . bin2hex(random_bytes(8));
+        mkdir($runDirectory, 0700, true);
+        chdir($runDirectory);
+        syncdb::$session_id = intval(microtime(true) * 1000);
+        file_put_contents('dump.sql', $this->sampleDump());
+        $received = $runDirectory . '/received.sql';
+        // the client stands in for mysql: it appends its input as one block, clients running at once stay separate
+        file_put_contents($runDirectory . '/client.sh', "#!/bin/bash\nsleep 0.2\nflock \"$received.lock\" -c \"cat >> '$received'\"\n");
+        chmod($runDirectory . '/client.sh', 0755);
+        $config = json_decode('{"engine":"mysql","threads":2,"target":{"ssh":false}}', false, 512, JSON_THROW_ON_ERROR);
+        $command = '( pv "dump.sql" | "' . $runDirectory . '/client.sh" -h localhost --port 3306 -u u -psecret app --default-character-set=utf8mb4 )';
+        $restore = (new ReflectionClass(syncdb::class))->getMethod('restore');
+
+        ob_start();
+        $started = microtime(true);
+        $restore->invoke(null, $config, $command, 'dump.sql');
+        $elapsed = microtime(true) - $started;
+        $output = ob_get_clean();
+
+        $this->assertStringContainsString('RESTORING DATABASE (2 THREADS)', $output);
+        $content = file_get_contents($received);
+        $this->assertSame(3, substr_count($content, PHP_EOL . 'COMMIT;' . PHP_EOL));
+        foreach (['small', 'large', 'medium'] as $table) {
+            $this->assertSame(1, substr_count($content, 'CREATE TABLE `' . $table . '`'));
+        }
+        $this->assertGreaterThan(strrpos($content, 'INSERT INTO'), strpos($content, 'CREATE VIEW `overview`'));
+        $this->assertLessThan(0.55, $elapsed, 'the two parts did not run at once');
+
+        syncdb::cleanUp();
+        chdir($this->workingDirectory);
+        exec('rm -rf ' . escapeshellarg($runDirectory));
+    }
+
+    public function testCachedDumpSkipsTheSourceUntilItExpires(): void
+    {
+        if (!class_exists(SQLite3::class)) {
+            $this->markTestSkipped('The SQLite3 extension is required.');
+        }
+        $temporaryDirectory = sys_get_temp_dir() . '/syncdb-' . bin2hex(random_bytes(8));
+        mkdir($temporaryDirectory . '/run', 0700, true);
+        $sourceFile = $temporaryDirectory . '/source.sqlite';
+        $targetFile = $temporaryDirectory . '/target.sqlite';
+        $profile = 'phpunit-' . bin2hex(random_bytes(8));
+        $profileFile = dirname(__DIR__) . '/profiles/' . $profile . '.json';
+        $write = function (string $value) use ($sourceFile): void {
+            $database = new SQLite3($sourceFile);
+            $database->exec('CREATE TABLE IF NOT EXISTS examples (id INTEGER PRIMARY KEY, name TEXT NOT NULL)');
+            $database->exec('DELETE FROM examples');
+            $database->exec("INSERT INTO examples (name) VALUES ('" . $value . "')");
+            $database->close();
+        };
+        $read = function () use ($targetFile): string {
+            $database = new SQLite3($targetFile, SQLITE3_OPEN_READONLY);
+            $value = (string) $database->querySingle('SELECT name FROM examples');
+            $database->close();
+            return $value;
+        };
+        file_put_contents(
+            $profileFile,
+            json_encode(
+                [
+                    'engine' => 'sqlite',
+                    'cache' => 60,
+                    'source' => ['database' => $sourceFile, 'ssh' => false],
+                    'target' => ['database' => $targetFile, 'ssh' => false]
+                ],
+                JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR
+            )
+        );
+        chdir($temporaryDirectory . '/run');
+        $sync = function () use ($profile): string {
+            ob_start();
+            try {
+                syncdb::sync($profile);
+            } finally {
+                $output = ob_get_clean();
+            }
+            return $output;
+        };
+        try {
+            $write('first');
+            $this->assertStringNotContainsString('CACHED', $sync());
+            $this->assertSame('first', $read());
+            $write('second');
+            $this->assertStringContainsString('USING CACHED DUMP', $sync());
+            $this->assertSame('first', $read(), 'a fresh cache serves the old dump');
+            $cache = (string) syncdb::cacheFile(json_decode(file_get_contents($profileFile), false, 512, JSON_THROW_ON_ERROR));
+            $this->assertFileExists($cache);
+            touch($cache, time() - 7200);
+            $this->assertStringNotContainsString('CACHED', $sync());
+            $this->assertSame('second', $read(), 'an expired cache is fetched again');
+        } finally {
+            unlink($profileFile);
+            if (isset($cache) && file_exists($cache)) {
+                unlink($cache);
+            }
+            chdir($this->workingDirectory);
+            exec('rm -rf ' . escapeshellarg($temporaryDirectory));
+        }
+    }
 }

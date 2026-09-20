@@ -146,6 +146,26 @@ Therefore you can use the `ignore_table_data`-directive in your `json`-config:
 }
 ```
 
+## Caching the dump
+
+`cache` (minutes) reuses the fetched dump from `syncdb/` in the system temp directory while it is younger; the key ignores passwords and keys. Search/replace and restore run as usual:
+
+```json
+{
+    "cache": 30
+}
+```
+
+## Parallel restore
+
+`threads` restores the tables of a mysql dump with that many clients at once; views, routines and events follow when all tables exist. Needs a local target and a dump with `DROP TABLE IF EXISTS` marks, otherwise the restore stays sequential:
+
+```json
+{
+    "threads": 8
+}
+```
+
 ## Privileges
 
 For faster MySQL imports, `syncdb` disables binary logging by default and restores it afterwards. This requires `SESSION_VARIABLES_ADMIN`, `SYSTEM_VARIABLES_ADMIN` or the deprecated `SUPER` privilege; set `"sql_log_bin": false` on the target if these privileges are unavailable.
