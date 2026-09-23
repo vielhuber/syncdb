@@ -23,7 +23,7 @@ syncdb syncs databases between two servers.
 - Supports parallel execution of multiple syncs
 - Uses optimization techniques for a faster restore
 - Also supports ssh connections to servers without the support for public keys
-- Shows live restore progress
+- Shows live progress for single-stream local MySQL restores on Linux with `pv`, including redirected LAMP build output
 
 ## Requirements
 

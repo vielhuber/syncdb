@@ -356,7 +356,7 @@ final class Test extends TestCase
         file_put_contents($runDirectory . '/client.sh', "#!/bin/bash\nsleep 0.2\nflock \"$received.lock\" -c \"cat >> '$received'\"\n");
         chmod($runDirectory . '/client.sh', 0755);
         $config = json_decode('{"engine":"mysql","threads":2,"target":{"ssh":false}}', false, 512, JSON_THROW_ON_ERROR);
-        $command = '( pv "dump.sql" | "' . $runDirectory . '/client.sh" -h localhost --port 3306 -u u -psecret app --default-character-set=utf8mb4 )';
+        $command = '( pv -f "dump.sql" 2>&3 | "' . $runDirectory . '/client.sh" -h localhost --port 3306 -u u -psecret app --default-character-set=utf8mb4 )';
         $restore = (new ReflectionClass(syncdb::class))->getMethod('restore');
 
         ob_start();
@@ -377,6 +377,41 @@ final class Test extends TestCase
         syncdb::cleanUp();
         chdir($this->workingDirectory);
         exec('rm -rf ' . escapeshellarg($runDirectory));
+    }
+
+    public function testRestoreStreamsProgressThroughPipesAndDetectsEitherPipelineFailure(): void
+    {
+        $directory = sys_get_temp_dir() . '/syncdb-' . bin2hex(random_bytes(8));
+        mkdir($directory, 0700);
+        $source = dirname(__DIR__) . '/src/syncdb.php';
+        foreach (['success', 'missing-dump', 'failed-client'] as $scenario) {
+            file_put_contents($directory . '/dump.sql', 'SELECT 1;' . PHP_EOL);
+            $dump = $scenario === 'missing-dump' ? 'missing.sql' : 'dump.sql';
+            $client = $scenario === 'failed-client'
+                ? "sh -c 'cat >/dev/null; echo PRIVATE_TEST_MARKER >&2; exit 7'"
+                : 'cat > received.sql';
+            $command = '( pv -f "' . $dump . '" 2>&3 | ' . $client . ' )';
+            $code = 'require ' . var_export($source, true) . ';'
+                . '$method = (new ReflectionClass(\\vielhuber\\syncdb\\syncdb::class))->getMethod("restore");'
+                . 'try { $method->invoke(null, new stdClass(), ' . var_export($command, true) . ', "dump.sql"); }'
+                . 'catch (RuntimeException $exception) { fwrite(STDERR, $exception->getMessage()); exit(1); }';
+            $process = proc_open([PHP_BINARY, '-r', $code], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $directory);
+            $output = stream_get_contents($pipes[1]);
+            $progress = stream_get_contents($pipes[2]);
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+            $status = proc_close($process);
+            $this->assertSame($scenario === 'success' ? 0 : 1, $status, $scenario);
+            $this->assertStringNotContainsString('PRIVATE_TEST_MARKER', $output . $progress);
+            if ($scenario === 'success') {
+                $this->assertStringContainsString('100%', $progress);
+                $this->assertSame('SELECT 1;' . PHP_EOL, file_get_contents($directory . '/received.sql'));
+            }
+            foreach (glob($directory . '/*') as $file) {
+                unlink($file);
+            }
+        }
+        rmdir($directory);
     }
 
     public function testCachedDumpSkipsTheSourceUntilItExpires(): void

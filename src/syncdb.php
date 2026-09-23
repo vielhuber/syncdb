@@ -788,8 +788,8 @@ final class syncdb
                 (!isset($config->target->ssh) || $config->target->ssh === false) &&
                 self::commandExists('pv');
             if ($progress === true) {
-                // group the pipeline so that a failing pv is logged and detected instead of importing nothing
-                $command .= "( pv \"" . $tmp_filename . "\" | ";
+                // fd 3 keeps progress visible while mysql errors remain in the private command log
+                $command .= "( pv -f \"" . $tmp_filename . "\" 2>&3 | ";
             }
             $command .=
                 (isset($config->target->cmd) ? self::escapeCmd($config->target->cmd) : "\"mysql\"") .
@@ -1119,6 +1119,9 @@ final class syncdb
             $parts = self::splitDump($tmp_filename, $threads);
         }
         if ($parts === null) {
+            if (str_starts_with($command, '( pv ')) {
+                $command = 'bash -o pipefail -c ' . escapeshellarg($command) . ' 3>&2';
+            }
             self::executeCommand($command, '--- RESTORING DATABASE...');
             return;
         }
@@ -1126,7 +1129,7 @@ final class syncdb
         echo '--- RESTORING DATABASE (' . count($parts['parts']) . ' THREADS)...';
         // the client without the file redirection and the optional pv pipeline that wrap it
         $client = preg_replace(
-            ['/^\( pv "[^"]*" \| /', '/ \)$/', '/ < "[^"]*"$/'],
+            ['/^\( pv -f "[^"]*" 2>&3 \| /', '/ \)$/', '/ < "[^"]*"$/'],
             '',
             trim(preg_replace('/\s+/', ' ', $command))
         );
